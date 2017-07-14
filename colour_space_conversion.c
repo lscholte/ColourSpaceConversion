@@ -78,16 +78,8 @@ void toRGB(unsigned char *ycbcr, unsigned char *rgb, int rows, int cols)
 
 int main(void)
 {
-
-	FILE *fptr = fopen("../data/rgb/7wonders.txt", "r");
-	if (fptr == NULL)
-	{
-		printf("Failed to open file\n");
-		return 1;
-	}
-
 	int rows, cols, components;
-	fscanf(fptr, "%d %d %d", &rows, &cols, &components);
+	scanf("%d %d %d", &rows, &cols, &components);
 
 	unsigned char rgb[rows*cols*components];
 	unsigned char ycbcr[rows*cols*components];
@@ -99,7 +91,7 @@ int main(void)
 	unsigned char *ptrB = rgb + 2;
 
 
-	while(fscanf(fptr, "%hhu %hhu %hhu", ptrR, ptrG, ptrB) != EOF)
+	while(scanf("%hhu %hhu %hhu", ptrR, ptrG, ptrB) != EOF)
 	{
 		ptrR += 3;
 		ptrG += 3;
