@@ -14,18 +14,40 @@ function image_to_rgb(input_file, output_file)
     % Convert image to an m x n by c array
     RGB = imread(input_file);
     [m, n, c] = size(RGB);
+    
+    if mod(m, 2) == 1
+       RGB(m, :, :) = []; 
+    end
+    
+    if mod(n, 2) == 1
+       RGB(:, n, :) = []; 
+    end
 
     % First 3 numbers are number of rows, number of columns
     % and number of colour components per pixel
     fprintf(outputFileID, '%d %d %d\n', m, n, c);
-    
-    % Print the RGB values for the entire image
-    for i=1:m
-        for j=1:n
+
+    for i=1:2:m
+        for j=1:2:n
             for k=1:c
                 fprintf(outputFileID, '%d ', RGB(i, j, k));
             end
+            
+            for k=1:c
+                fprintf(outputFileID, '%d ', RGB(i, j+1, k));
+            end
+            
+            for k=1:c
+                fprintf(outputFileID, '%d ', RGB(i+1, j, k));
+            end
+            
+            for k=1:c
+               fprintf(outputFileID, '%d ', RGB(i+1, j+1, k));
+            end
         end
     end
+
+
+
     
     fclose(outputFileID);
