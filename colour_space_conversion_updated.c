@@ -42,7 +42,7 @@ void toYCbCr(unsigned char *rgb, unsigned char *ycbcr, int rows, int cols)
 		cr3 = 128.0 + 0.439*r3 - 0.368*g3 - 0.071*b3; //should be guaranteed to be in range of [0, 255]
 
 		// Pixel 4
-		r4 = (float) rgb[+9];
+		r4 = (float) rgb[i+9];
 		g4 = (float) rgb[i+10];
 		b4 = (float) rgb[i+11];
 		y4  =  16.0 + 0.257*r4 + 0.504*g4 + 0.098*b4; //should be guaranteed to be in range of [0, 255]
@@ -52,12 +52,12 @@ void toYCbCr(unsigned char *rgb, unsigned char *ycbcr, int rows, int cols)
 		// Perform downsampling
 		
 		// simple (From my testing, this actually seems to result in better images. Strange...)
-		cbOut = cb1; 
-		crOut = cr1;
+//		cbOut = cb1; 
+//		crOut = cr1;
 		
 		// average
-//		cbOut = (cb1 + cb2 + cb3 + cb4) / 4;
-//		crOut = (cr1 + cr2 + cr3 + cr4) / 4;
+		cbOut = (cb1 + cb2 + cb3 + cb4) / 4;
+		crOut = (cr1 + cr2 + cr3 + cr4) / 4;
 
 
 		// Set output values
@@ -113,23 +113,23 @@ void toRGB(unsigned char *ycbcr, unsigned char *rgb, int rows, int cols)
 		y16_4 = (float) ycbcr[i+5] - 16.0;
 
 		rP2 = 1.596*cr128;
-		gP2 = 0.813*cr128 - 0.391*cb128;
+		gP2 = -0.813*cr128 - 0.391*cb128;
 		bP2 = 2.018*cb128;
 
 		r1 = clamp(1.164*y16_1 + rP2); //this might exceed 255
-		g1 = clamp(1.164*y16_1 - gP2); //this could be less than 0 or greater than 255
+		g1 = clamp(1.164*y16_1 + gP2); //this could be less than 0 or greater than 255
 		b1 = clamp(1.164*y16_1 + bP2); //this might exceed 255
 
 		r2 = clamp(1.164*y16_2 + rP2); //this might exceed 255
-		g2 = clamp(1.164*y16_2 - gP2); //this could be less than 0 or greater than 255
+		g2 = clamp(1.164*y16_2 + gP2); //this could be less than 0 or greater than 255
 		b2 = clamp(1.164*y16_2 + bP2); //this might exceed 255
 
 		r3 = clamp(1.164*y16_3 + rP2); //this might exceed 255
-		g3 = clamp(1.164*y16_3 - gP2); //this could be less than 0 or greater than 255
+		g3 = clamp(1.164*y16_3 + gP2); //this could be less than 0 or greater than 255
 		b3 = clamp(1.164*y16_3 + bP2); //this might exceed 255
 
 		r4 = clamp(1.164*y16_4 + rP2); //this might exceed 255
-		g4 = clamp(1.164*y16_4 - gP2); //this could be less than 0 or greater than 255
+		g4 = clamp(1.164*y16_4 + gP2); //this could be less than 0 or greater than 255
 		b4 = clamp(1.164*y16_4 + bP2); //this might exceed 255
 
 		// Possibly do error checking here to ensure rX, gX, bX are in range [0, 255]
