@@ -73,64 +73,68 @@ void toYCbCr(unsigned char * restrict rgb, unsigned char * restrict ycbcr, int r
 
 //It turns out this actually is important because without it
 //we get some funky results
-float clamp(float f)
+int clamp(int n)
 {
-    if(f > 255)
+    if(n > 255)
     {
-        fprintf(stderr, "float %f out of range\n", f);
+        fprintf(stderr, "int %d out of range\n", n);
         return 255;
     }
-    else if(f < 0)
+    else if(n < 0)
     {
-        fprintf(stderr, "float %f out of range\n", f);
+        fprintf(stderr, "int %d out of range\n", n);
         return 0;
     }
-    return f;
+    return n;
 }
 
 //ycbcr is a rows*cols*3 array of unsigned char (ie [0, 255])
 //rgb is a rows*cols*3 array of unsigned char (ie [0, 255]). Its contents are modified by this function
 //rows is the number of rows in the image
 //cols is the number of columns in the image
-void toRGB(unsigned char * restrict ycbcr, unsigned char * restrict rgb, int rows, int cols)
+void toRGB(unsigned char *ycbcr, unsigned char *rgb, int rows, int cols)
 {
-	float r1, g1, b1;
-	float r2, g2, b2;
-	float r3, g3, b3;
-	float r4, g4, b4;
-	float y16_1, cb128, cr128, y16_2, y16_3, y16_4;
-	float rP2, gP2, bP2;
+	int r1, g1, b1;
+	int r2, g2, b2;
+	int r3, g3, b3;
+	int r4, g4, b4;
+	int y16_1, cb128, cr128, y16_2, y16_3, y16_4;
+	int rP2, gP2, bP2, yP2;
 	int j = 0; // rgb output array position 	
 	int ycbcrLen = rows*cols*3/2;
 
 	for(int i = 0; i < ycbcrLen; i += 6)
 	{
-		y16_1 = (float) ycbcr[i] - 16.0;
-		cb128 = (float) ycbcr[i+1] - 128.0;
-		cr128 = (float) ycbcr[i+2] - 128.0;		
-		y16_2 = (float) ycbcr[i+3] - 16.0;
-		y16_3 = (float) ycbcr[i+4] - 16.0;
-		y16_4 = (float) ycbcr[i+5] - 16.0;
+		y16_1 = ycbcr[i] - 16;
+		cb128 = ycbcr[i+1] - 128;
+		cr128 = ycbcr[i+2] - 128;		
+		y16_2 = ycbcr[i+3] - 16;
+		y16_3 = ycbcr[i+4] - 16;
+		y16_4 = ycbcr[i+5] - 16;
 
-		rP2 = 1.596*cr128;
-		gP2 = -0.813*cr128 - 0.391*cb128;
-		bP2 = 2.018*cb128;
+		rP2 = 52298*cr128 >> 15;
+		gP2 = (-53281*cr128 - 25625*cb128) >> 16;
+		bP2 = 33063*cb128 >> 14;
 
-		r1 = clamp(1.164*y16_1 + rP2); //this might exceed 255
-		g1 = clamp(1.164*y16_1 + gP2); //this could be less than 0 or greater than 255
-		b1 = clamp(1.164*y16_1 + bP2); //this might exceed 255
+		yP2 = 38142*y16_1 >> 15;
+		r1 = clamp(yP2 + rP2); //this might exceed 255
+		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		b1 = clamp(yP2 + bP2); //this might exceed 255
 
-		r2 = clamp(1.164*y16_2 + rP2); //this might exceed 255
-		g2 = clamp(1.164*y16_2 + gP2); //this could be less than 0 or greater than 255
-		b2 = clamp(1.164*y16_2 + bP2); //this might exceed 255
+		yP2 = 38142*y16_2 >> 15;
+		r2 = clamp(yP2 + rP2); //this might exceed 255
+		g2 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		b2 = clamp(yP2 + bP2); //this might exceed 255
 
-		r3 = clamp(1.164*y16_3 + rP2); //this might exceed 255
-		g3 = clamp(1.164*y16_3 + gP2); //this could be less than 0 or greater than 255
-		b3 = clamp(1.164*y16_3 + bP2); //this might exceed 255
+		yP2 = 38142*y16_3 >> 15;
+		r3 = clamp(yP2 + rP2); //this might exceed 255
+		g3 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		b3 = clamp(yP2 + bP2); //this might exceed 255
 
-		r4 = clamp(1.164*y16_4 + rP2); //this might exceed 255
-		g4 = clamp(1.164*y16_4 + gP2); //this could be less than 0 or greater than 255
-		b4 = clamp(1.164*y16_4 + bP2); //this might exceed 255
+		yP2 = 38142*y16_4 >> 15;
+		r4 = clamp(yP2 + rP2); //this might exceed 255
+		g4 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		b4 = clamp(yP2 + bP2); //this might exceed 255
 
 		// Possibly do error checking here to ensure rX, gX, bX are in range [0, 255]
 
