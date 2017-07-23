@@ -56,8 +56,8 @@ void toYCbCr(unsigned char * restrict rgb, unsigned char * restrict ycbcr, int r
 //		crOut = cr1;
 		
 		// average
-		cbOut = (cb1 + cb2 + cb3 + cb4) >> 2;
-		crOut = (cr1 + cr2 + cr3 + cr4) >> 2;
+		cbOut = (cb1 + cb2 + cb3 + cb4) / 4;
+		crOut = (cr1 + cr2 + cr3 + cr4) / 4;
 
 
 		// Set output values
