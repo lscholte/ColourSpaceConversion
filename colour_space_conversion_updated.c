@@ -51,13 +51,13 @@ void toYCbCr(unsigned char *rgb, unsigned char *ycbcr, int rows, int cols)
 		
 		// Perform downsampling
 		
-		// simple
+		// simple (From my testing, this actually seems to result in better images. Strange...)
 		cbOut = cb1; 
 		crOut = cr1;
 		
 		// average
-		cbOut = (cb1 + cb2 + cb3 + cb4) / 4;
-		crOut = (cr1 + cr2 + cr3 + cr4) / 4;
+//		cbOut = (cb1 + cb2 + cb3 + cb4) / 4;
+//		crOut = (cr1 + cr2 + cr3 + cr4) / 4;
 
 
 		// Set output values
@@ -69,6 +69,23 @@ void toYCbCr(unsigned char *rgb, unsigned char *ycbcr, int rows, int cols)
 		ycbcr[j++] = (unsigned char) y3;	// pixel 3 Y'
 		ycbcr[j++] = (unsigned char) y4;	// pixel 4 Y'
 	}
+}
+
+//It turns out this actually is important because without it
+//we get some funky results
+float clamp(float f)
+{
+    if(f > 255)
+    {
+        fprintf(stderr, "float %f out of range\n", f);
+        return 255;
+    }
+    else if(f < 0)
+    {
+        fprintf(stderr, "float %f out of range\n", f);
+        return 0;
+    }
+    return f;
 }
 
 //ycbcr is a rows*cols*3 array of unsigned char (ie [0, 255])
@@ -99,21 +116,21 @@ void toRGB(unsigned char *ycbcr, unsigned char *rgb, int rows, int cols)
 		gP2 = 0.813*cr128 - 0.391*cb128;
 		bP2 = 2.018*cb128;
 
-		r1 = 1.164*y16_1 + rP2; //this might exceed 255
-		g1 = 1.164*y16_1 - gP2; //this could be less than 0 or greater than 255
-		b1 = 1.164*y16_1 + bP2; //this might exceed 255
+		r1 = clamp(1.164*y16_1 + rP2); //this might exceed 255
+		g1 = clamp(1.164*y16_1 - gP2); //this could be less than 0 or greater than 255
+		b1 = clamp(1.164*y16_1 + bP2); //this might exceed 255
 
-		r2 = 1.164*y16_2 + rP2; //this might exceed 255
-		g2 = 1.164*y16_2 - gP2; //this could be less than 0 or greater than 255
-		b2 = 1.164*y16_2 + bP2; //this might exceed 255
+		r2 = clamp(1.164*y16_2 + rP2); //this might exceed 255
+		g2 = clamp(1.164*y16_2 - gP2); //this could be less than 0 or greater than 255
+		b2 = clamp(1.164*y16_2 + bP2); //this might exceed 255
 
-		r3 = 1.164*y16_3 + rP2; //this might exceed 255
-		g3 = 1.164*y16_3 - gP2; //this could be less than 0 or greater than 255
-		b3 = 1.164*y16_3 + bP2; //this might exceed 255
+		r3 = clamp(1.164*y16_3 + rP2); //this might exceed 255
+		g3 = clamp(1.164*y16_3 - gP2); //this could be less than 0 or greater than 255
+		b3 = clamp(1.164*y16_3 + bP2); //this might exceed 255
 
-		r4 = 1.164*y16_4 + rP2; //this might exceed 255
-		g4 = 1.164*y16_4 - gP2; //this could be less than 0 or greater than 255
-		b4 = 1.164*y16_4 + bP2; //this might exceed 255
+		r4 = clamp(1.164*y16_4 + rP2); //this might exceed 255
+		g4 = clamp(1.164*y16_4 - gP2); //this could be less than 0 or greater than 255
+		b4 = clamp(1.164*y16_4 + bP2); //this might exceed 255
 
 		// Possibly do error checking here to ensure rX, gX, bX are in range [0, 255]
 
@@ -159,12 +176,12 @@ int main(void)
 	fprintf(stderr, "Converting to YCbCr...\n");
 	toYCbCr(rgb, ycbcr, rows, cols);
 
-	for(int i = 0; i < rows*cols*components/2; ++i)
-	{
-		printf("%hhu ", ycbcr[i]);
-	}
+//	for(int i = 0; i < rows*cols*components/2; ++i)
+//	{
+//		printf("%hhu ", ycbcr[i]);
+//	}
 	
-	printf("\n\n");
+//	printf("\n\n");
 
 	fprintf(stderr, "Converting to RGB...\n");
 	toRGB(ycbcr, rgb, rows, cols);
@@ -172,6 +189,7 @@ int main(void)
 	fprintf(stderr, "%lu\n", sizeof(rgb));
 
 	fprintf(stderr, "Writing output...\n");
+    printf("%d %d %d\n", rows, cols, components);
 	for(int i = 0; i < rows*cols*components; ++i)
 	{
 		printf("%hhu ", rgb[i]);
