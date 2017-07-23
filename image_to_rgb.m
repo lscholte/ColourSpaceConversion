@@ -16,11 +16,13 @@ function image_to_rgb(input_file, output_file)
     [m, n, c] = size(RGB);
     
     if mod(m, 2) == 1
-       RGB(m, :, :) = []; 
+       RGB(m, :, :) = [];
+       m = m - 1;
     end
     
     if mod(n, 2) == 1
        RGB(:, n, :) = []; 
+       n = n - 1;
     end
 
     % First 3 numbers are number of rows, number of columns
