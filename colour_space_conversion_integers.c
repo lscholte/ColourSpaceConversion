@@ -5,7 +5,7 @@
 //ycbcr is a rows*cols*3 array of unsigned char (ie [0, 255]). Its contents are modified by this function
 //rows is the number of rows in the image
 //cols is the number of columns in the image
-void toYCbCr(unsigned char *rgb, unsigned char *ycbcr, int rows, int cols)
+void toYCbCr(unsigned char * restrict rgb, unsigned char * restrict ycbcr, int rows, int cols)
 {
 	int r1, g1, b1, y1, cb1, cr1;
 	int r2, g2, b2, y2, cb2, cr2;
@@ -92,7 +92,7 @@ float clamp(float f)
 //rgb is a rows*cols*3 array of unsigned char (ie [0, 255]). Its contents are modified by this function
 //rows is the number of rows in the image
 //cols is the number of columns in the image
-void toRGB(unsigned char *ycbcr, unsigned char *rgb, int rows, int cols)
+void toRGB(unsigned char * restrict ycbcr, unsigned char * restrict rgb, int rows, int cols)
 {
 	float r1, g1, b1;
 	float r2, g2, b2;
