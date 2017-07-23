@@ -12,4 +12,4 @@ endif()
 #Use C99 and enable all compiler warnings
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -save-temps -std=c99 -Wall") 
 
-add_executable(converter "colour_space_conversion_updated.c")
+add_executable(converter "colour_space_conversion_integers.c")
