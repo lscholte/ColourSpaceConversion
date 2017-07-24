@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 //rgb is a rows*cols*3 array of unsigned char (ie [0, 255])
 //ycbcr is a rows*cols*3 array of unsigned char (ie [0, 255]). Its contents are modified by this function
@@ -161,8 +162,12 @@ int main(void)
 	int rows, cols, components;
 	scanf("%d %d %d", &rows, &cols, &components);
 
-	unsigned char rgb[rows*cols*components];
-	unsigned char ycbcr[rows*cols*components];
+	assert(rows % 2 == 0);
+	assert(cols % 2 == 0);
+	assert(components == 3);
+
+	unsigned char *rgb = malloc(rows*cols*components*sizeof(unsigned char));
+	unsigned char *ycbcr = malloc(rows*cols*components*sizeof(unsigned char) / 2);
 
 	fprintf(stderr, "%lu\n", sizeof(rgb));
 
@@ -200,6 +205,9 @@ int main(void)
 	}
 	
 	printf("\n\n");
+
+	free(rgb);
+	free(ycbcr);
 }
 
 
