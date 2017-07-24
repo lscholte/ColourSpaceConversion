@@ -13,3 +13,4 @@ endif()
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -save-temps -std=c99 -Wall") 
 
 add_executable(converter "colour_space_conversion_integers.c")
+add_executable(createImage "write_png.c" "stb_image_write.h")
