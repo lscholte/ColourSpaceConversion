@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <stdint.h>
 
 //rgb is a rows*cols*3 array of unsigned char (ie [0, 255])
 //ycbcr is a rows*cols*3 array of unsigned char (ie [0, 255]). Its contents are modified by this function
 //rows is the number of rows in the image
 //cols is the number of columns in the image
-void toYCbCr(unsigned char * restrict rgb, unsigned char * restrict ycbcr, int rows, int cols)
+void toYCbCr(uint8_t * restrict rgb, uint8_t * restrict ycbcr, uint16_t rows, uint16_t cols)
 {
 	int r1, g1, b1, y1, cb1, cr1;
 	int r2, g2, b2, y2, cb2, cr2;
@@ -16,7 +17,7 @@ void toYCbCr(unsigned char * restrict rgb, unsigned char * restrict ycbcr, int r
 	int j = 0; // ycbcr output array position 	
 	int rgbLen = rows*cols*3;
 
-	for(int i = 0; i < rgbLen; i += 12)
+	for(int i = rgbLen - 12; i > 0; i -= 12)
 	{
 		// Pixel 1
 		r1 = rgb[i];
@@ -51,7 +52,7 @@ void toYCbCr(unsigned char * restrict rgb, unsigned char * restrict ycbcr, int r
 		cr4 = 128 + ((28770*r4 - 24117*g4 - 4653*b4) >> 16); //should be guaranteed to be in range of [0, 255]
 		
 		// Perform downsampling
-		
+	
 		// simple (From my testing, this actually seems to result in better images. Strange...)
 //		cbOut = cb1; 
 //		crOut = cr1;
@@ -63,12 +64,12 @@ void toYCbCr(unsigned char * restrict rgb, unsigned char * restrict ycbcr, int r
 
 		// Set output values
 		// is using j++ better or worse than using j, j+1, j+2... then j+=6 after?
-		ycbcr[j++] = (unsigned char) y1;	// pixel 1 Y'
-		ycbcr[j++] = (unsigned char) cbOut; // pixel 1, 2, 3, 4 Cb
-		ycbcr[j++] = (unsigned char) crOut; // pixel 1, 2, 3, 4 Cr
-		ycbcr[j++] = (unsigned char) y2;	// pixel 2 Y'
-		ycbcr[j++] = (unsigned char) y3;	// pixel 3 Y'
-		ycbcr[j++] = (unsigned char) y4;	// pixel 4 Y'
+		ycbcr[j++] = y1;	// pixel 1 Y'
+		ycbcr[j++] = cbOut; // pixel 1, 2, 3, 4 Cb
+		ycbcr[j++] = crOut; // pixel 1, 2, 3, 4 Cr
+		ycbcr[j++] = y2;	// pixel 2 Y'
+		ycbcr[j++] = y3;	// pixel 3 Y'
+		ycbcr[j++] = y4;	// pixel 4 Y'
 	}
 }
 
@@ -93,7 +94,7 @@ int clamp(int n)
 //rgb is a rows*cols*3 array of unsigned char (ie [0, 255]). Its contents are modified by this function
 //rows is the number of rows in the image
 //cols is the number of columns in the image
-void toRGB(unsigned char *ycbcr, unsigned char *rgb, int rows, int cols)
+void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint16_t cols)
 {
 	int r1, g1, b1;
 	int r2, g2, b2;
@@ -102,9 +103,9 @@ void toRGB(unsigned char *ycbcr, unsigned char *rgb, int rows, int cols)
 	int y16_1, cb128, cr128, y16_2, y16_3, y16_4;
 	int rP2, gP2, bP2, yP2;
 	int j = 0; // rgb output array position 	
-	int ycbcrLen = rows*cols*3/2;
+	int ycbcrLen = rows*cols*3 >> 1;
 
-	for(int i = 0; i < ycbcrLen; i += 6)
+	for(int i = ycbcrLen - 6; i > 0; i -= 6)
 	{
 		y16_1 = ycbcr[i] - 16;
 		cb128 = ycbcr[i+1] - 128;
@@ -139,21 +140,21 @@ void toRGB(unsigned char *ycbcr, unsigned char *rgb, int rows, int cols)
 
 		// Possibly do error checking here to ensure rX, gX, bX are in range [0, 255]
 
-		rgb[j++] = (unsigned char) r1;
-		rgb[j++] = (unsigned char) g1;
-		rgb[j++] = (unsigned char) b1;
+		rgb[j++] = r1;
+		rgb[j++] = g1;
+		rgb[j++] = b1;
 
-		rgb[j++] = (unsigned char) r2;
-		rgb[j++] = (unsigned char) g2;
-		rgb[j++] = (unsigned char) b2;
+		rgb[j++] = r2;
+		rgb[j++] = g2;
+		rgb[j++] = b2;
 
-		rgb[j++] = (unsigned char) r3;
-		rgb[j++] = (unsigned char) g3;
-		rgb[j++] = (unsigned char) b3;
+		rgb[j++] = r3;
+		rgb[j++] = g3;
+		rgb[j++] = b3;
 
-		rgb[j++] = (unsigned char) r4;
-		rgb[j++] = (unsigned char) g4;
-		rgb[j++] = (unsigned char) b4;
+		rgb[j++] = r4;
+		rgb[j++] = g4;
+		rgb[j++] = b4;
 	}
 }
 
@@ -166,14 +167,14 @@ int main(void)
 	assert(cols % 2 == 0);
 	assert(components == 3);
 
-	unsigned char *rgb = malloc(rows*cols*components*sizeof(unsigned char));
-	unsigned char *ycbcr = malloc(rows*cols*components*sizeof(unsigned char) / 2);
+	uint8_t *rgb = malloc(rows*cols*components*sizeof(unsigned char));
+	uint8_t *ycbcr = malloc(rows*cols*components*sizeof(unsigned char) >> 1);
 
 	fprintf(stderr, "%lu\n", sizeof(rgb));
 
-	unsigned char *ptrR = rgb;
-	unsigned char *ptrG = rgb + 1;
-	unsigned char *ptrB = rgb + 2;
+	uint8_t *ptrR = rgb;
+	uint8_t *ptrG = rgb + 1;
+	uint8_t *ptrB = rgb + 2;
 
 	while(scanf("%hhu %hhu %hhu", ptrR, ptrG, ptrB) != EOF)
 	{
@@ -184,18 +185,11 @@ int main(void)
 
 	fprintf(stderr, "Converting to YCbCr...\n");
 	toYCbCr(rgb, ycbcr, rows, cols);
-
-//	for(int i = 0; i < rows*cols*components/2; ++i)
-//	{
-//		printf("%hhu ", ycbcr[i]);
-//	}
-	
-//	printf("\n\n");
+	fprintf(stderr, "Size of YCbCr: %lu\n", sizeof(rgb));	
 
 	fprintf(stderr, "Converting to RGB...\n");
 	toRGB(ycbcr, rgb, rows, cols);
-
-	fprintf(stderr, "%lu\n", sizeof(rgb));
+	fprintf(stderr, "Size of RGB: %lu\n", sizeof(rgb));
 
 	fprintf(stderr, "Writing output...\n");
     printf("%d %d %d\n", rows, cols, components);
