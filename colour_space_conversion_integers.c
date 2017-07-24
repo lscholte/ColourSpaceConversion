@@ -79,12 +79,10 @@ int clamp(int n)
 {
     if(n > 255)
     {
-        fprintf(stderr, "int %d out of range\n", n);
         return 255;
     }
     else if(n < 0)
     {
-        fprintf(stderr, "int %d out of range\n", n);
         return 0;
     }
     return n;
@@ -185,11 +183,9 @@ int main(void)
 
 	fprintf(stderr, "Converting to YCbCr...\n");
 	toYCbCr(rgb, ycbcr, rows, cols);
-	fprintf(stderr, "Size of YCbCr: %lu\n", sizeof(rgb));	
 
 	fprintf(stderr, "Converting to RGB...\n");
 	toRGB(ycbcr, rgb, rows, cols);
-	fprintf(stderr, "Size of RGB: %lu\n", sizeof(rgb));
 
 	fprintf(stderr, "Writing output...\n");
     printf("%d %d %d\n", rows, cols, components);
