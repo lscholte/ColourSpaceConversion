@@ -112,72 +112,20 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 	uint8_t *rgbPtr = rgb;
 	uint32_t ycbcr_tmp;
 
+	// Cast so 4 8-bit integers are loaded at once
 	uint32_t *ycbcr32 = (uint32_t *) ycbcr;
 
-	//for(int i = (rows*cols*3 >> 1) - 6; i > 0; i -= 6)
-	for(int i = (rows*cols*3 >> 1) - 6; i > 0; i -= 6)
+	for(int i = (rows*cols*3 >> 3) - 1; i > 0; i -= 3)
 	{
-		//ycbcr_tmp = ycbcr32[i];
-		y16_1 = ycbcr[i] - 16; //(ycbcr_tmp & 0x000000FF) - 16;
-		cb128 = ycbcr[i+1] - 128; //((ycbcr_tmp << 16) >> 24)- 128;
-		cr128 = ycbcr[i+2] - 128; //((ycbcr_tmp << 8) >> 24) - 128;		
-		y16_2 = ycbcr[i+3] - 16; //(ycbcr_tmp >> 24) - 16;
 
-		//ycbcr_tmp = ycbcr32[i+1];
-		y16_3 = ycbcr[i+4] - 16; //(ycbcr_tmp & 0x000000FF) - 16;
-		y16_4 = ycbcr[i+5] - 16; //((ycbcr_tmp << 16) >> 24) - 16;
-
-		rP2 = 52298*cr128 >> 15;
-		gP2 = (-53281*cr128 - 25625*cb128) >> 16;
-		bP2 = 33063*cb128 >> 14;
-
-		yP2 = 38142*y16_1 >> 15;
-		r1 = clamp(yP2 + rP2); //this might exceed 255
-		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
-		b1 = clamp(yP2 + bP2); //this might exceed 255
-
-		yP2 = 38142*y16_2 >> 15;
-		r2 = clamp(yP2 + rP2); //this might exceed 255
-		g2 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
-		b2 = clamp(yP2 + bP2); //this might exceed 255
-
-		yP2 = 38142*y16_3 >> 15;
-		r3 = clamp(yP2 + rP2); //this might exceed 255
-		g3 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
-		b3 = clamp(yP2 + bP2); //this might exceed 255
-
-		yP2 = 38142*y16_4 >> 15;
-		r4 = clamp(yP2 + rP2); //this might exceed 255
-		g4 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
-		b4 = clamp(yP2 + bP2); //this might exceed 255
-
-		*rgbPtr++ = r1;
-		*rgbPtr++ = g1;
-		*rgbPtr++ = b1;
-
-		*rgbPtr++ = r2;
-		*rgbPtr++ = g2;
-		*rgbPtr++ = b2;
-
-		*rgbPtr++ = r3;
-		*rgbPtr++ = g3;
-		*rgbPtr++ = b3;
-
-		*rgbPtr++ = r4;
-		*rgbPtr++ = g4;
-		*rgbPtr++ = b4;
-
-		i -= 6;
-
-		//ycbcr_tmp = ycbcr32[i];
-		y16_1 = ycbcr[i] - 16; //(ycbcr_tmp & 0x000000FF) - 16;
-		cb128 = ycbcr[i+1] - 128; //((ycbcr_tmp << 16) >> 24)- 128;
-		cr128 = ycbcr[i+2] - 128; //((ycbcr_tmp << 8) >> 24) - 128;		
-		y16_2 = ycbcr[i+3] - 16; //(ycbcr_tmp >> 24) - 16;
-
-		//ycbcr_tmp = ycbcr32[i+1];
-		y16_3 = ycbcr[i+4] - 16; //(ycbcr_tmp & 0x000000FF) - 16;
-		y16_4 = ycbcr[i+5] - 16; //((ycbcr_tmp << 16) >> 24) - 16;
+		ycbcr_tmp = ycbcr32[i];
+		y16_4 = (ycbcr_tmp >> 24) - 16;
+		y16_3 = ((ycbcr_tmp << 8) >> 24) - 16;
+		y16_2 = ((ycbcr_tmp << 16) >> 24) - 16;
+		cr128 = (ycbcr_tmp & 0x000000FF) - 128;	
+		ycbcr_tmp = ycbcr32[i-1];	
+		cb128 = (ycbcr_tmp >> 24) - 128;
+		y16_1 = ((ycbcr_tmp << 8) >> 24) - 16;
 
 		rP2 = 52298*cr128 >> 15;
 		gP2 = (-53281*cr128 - 25625*cb128) >> 16;
@@ -220,22 +168,13 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 		*rgbPtr++ = b4;
 
 
-
-
-
-
-		/***** 
-				******* UNROLLING *******
-		******/
-/*
-		y16_1 = ycbcr[i+6] - 16; //((ycbcr_tmp << 8) >> 24) - 16;
-		cb128 = ycbcr[i+7] - 128; //(ycbcr_tmp >> 24)- 128;
-
-		//ycbcr_tmp = ycbcr32[i+2];
-		cr128 = ycbcr[i+8] - 128; //(ycbcr_tmp & 0x000000FF) - 128;		
-		y16_2 = ycbcr[i+9] - 16; //((ycbcr_tmp << 16) >> 24) - 16;
-		y16_3 = ycbcr[i+10] - 16; //((ycbcr_tmp << 8) >> 24) - 16;
-		y16_4 = ycbcr[i+11] - 16; //(ycbcr_tmp >> 24) - 16;
+		y16_4 = ((ycbcr_tmp << 16) >> 24) - 16;
+		y16_3 = (ycbcr_tmp & 0x000000FF) - 16;
+		ycbcr_tmp = ycbcr32[i-2];	
+		y16_2 = (ycbcr_tmp >> 24) - 16;
+		cr128 = ((ycbcr_tmp << 8) >> 24) - 128;	
+		cb128 = ((ycbcr_tmp << 16) >> 24)- 128;
+		y16_1 = (ycbcr_tmp & 0x000000FF) - 16;
 
 		rP2 = 52298*cr128 >> 15;
 		gP2 = (-53281*cr128 - 25625*cb128) >> 16;
@@ -276,7 +215,7 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 		*rgbPtr++ = r4;
 		*rgbPtr++ = g4;
 		*rgbPtr++ = b4;
-*/
+
 	}
 }
 
