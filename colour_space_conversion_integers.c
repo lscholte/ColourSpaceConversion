@@ -36,8 +36,11 @@ void toYCbCr(uint8_t * restrict rgb, uint8_t * restrict ycbcr, uint16_t rows, ui
 		rgb_tmp = rgb32[i+1];
 
 		y1  =  16 + ((16483*r1 + 33030*g1 + 6423*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		*ycbcrPtr++ = y1;
 		cb1 = 128 + ((-9699*r1 - 19071*g1 + 28770*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		*ycbcrPtr++ = cbOut;
 		cr1 = 128 + ((28770*r1 - 24117*g1 - 4653*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		*ycbcrPtr++ = crOut;
 		 
 		// split into rgb components
 		g2 = rgb_tmp & 0x000000FF;
@@ -49,8 +52,9 @@ void toYCbCr(uint8_t * restrict rgb, uint8_t * restrict ycbcr, uint16_t rows, ui
 		rgb_tmp = rgb32[i+2];
 
 		y2  =  16 + ((16483*r2 + 33030*g2 + 6423*b2) >> 16); //should be guaranteed to be in range of [0, 255]
-		cb2 = 128 + ((-9699*r2 - 19071*g2 + 28770*b2) >> 16); //should be guaranteed to be in range of [0, 255]
-		cr2 = 128 + ((28770*r2 - 24117*g2 - 4653*b2) >> 16); //should be guaranteed to be in range of [0, 255]
+		*ycbcrPtr++ = y2;
+//		cb2 = 128 + ((-9699*r2 - 19071*g2 + 28770*b2) >> 16); //should be guaranteed to be in range of [0, 255]
+//		cr2 = 128 + ((28770*r2 - 24117*g2 - 4653*b2) >> 16); //should be guaranteed to be in range of [0, 255]
 
 		// split into rgb components
 		b3 = rgb_tmp & 0x000000FF;
@@ -62,32 +66,34 @@ void toYCbCr(uint8_t * restrict rgb, uint8_t * restrict ycbcr, uint16_t rows, ui
 		rgb_tmp = rgb32[i-3];
 
 		y3  =  16 + ((16483*r3 + 33030*g3 + 6423*b3) >> 16); //should be guaranteed to be in range of [0, 255]
-		cb3 = 128 + ((-9699*r3 - 19071*g3 + 28770*b3) >> 16); //should be guaranteed to be in range of [0, 255]
-		cr3 = 128 + ((28770*r3 - 24117*g3 - 4653*b3) >> 16); //should be guaranteed to be in range of [0, 255]
+		*ycbcrPtr++ = y3;
+//		cb3 = 128 + ((-9699*r3 - 19071*g3 + 28770*b3) >> 16); //should be guaranteed to be in range of [0, 255]
+//		cr3 = 128 + ((28770*r3 - 24117*g3 - 4653*b3) >> 16); //should be guaranteed to be in range of [0, 255]
 
 		y4  =  16 + ((16483*r4 + 33030*g4 + 6423*b4) >> 16); //should be guaranteed to be in range of [0, 255]
-		cb4 = 128 + ((-9699*r4 - 19071*g4 + 28770*b4) >> 16); //should be guaranteed to be in range of [0, 255]
-		cr4 = 128 + ((28770*r4 - 24117*g4 - 4653*b4) >> 16); //should be guaranteed to be in range of [0, 255]
+		*ycbcrPtr++ = y4;
+//		cb4 = 128 + ((-9699*r4 - 19071*g4 + 28770*b4) >> 16); //should be guaranteed to be in range of [0, 255]
+//		cr4 = 128 + ((28770*r4 - 24117*g4 - 4653*b4) >> 16); //should be guaranteed to be in range of [0, 255]
 		
 
 		// Perform downsampling
 	
 		// simple
-//		cbOut = cb1; 
-//		crOut = cr1;
+		cbOut = cb1; 
+		crOut = cr1;
 		
 		// average
-		cbOut = (cb1 + cb2 + cb3 + cb4) >> 2;
-		crOut = (cr1 + cr2 + cr3 + cr4) >> 2;
+//		cbOut = (cb1 + cb2 + cb3 + cb4) >> 2;
+//		crOut = (cr1 + cr2 + cr3 + cr4) >> 2;
 
 
 		// Set output values
-		*ycbcrPtr++ = y1;
-		*ycbcrPtr++ = cbOut;
-		*ycbcrPtr++ = crOut;
-		*ycbcrPtr++ = y2;
-		*ycbcrPtr++ = y3;
-		*ycbcrPtr++ = y4;
+//		*ycbcrPtr++ = y1;
+//		*ycbcrPtr++ = cbOut;
+//		*ycbcrPtr++ = crOut;
+//		*ycbcrPtr++ = y2;
+//		*ycbcrPtr++ = y3;
+//		*ycbcrPtr++ = y4;
 	
 	}
 }
@@ -120,7 +126,7 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 	int y16_1, cb128, cr128, y16_2, y16_3, y16_4;
 	int rP2, gP2, bP2, yP2;
 	uint8_t *rgbPtr = rgb;
-	int i = (rows*cols*3 >> 3) - 1;
+	int i = ((rows*cols*3) >> 3) - 1;
 	// Cast so 4 8-bit integers are loaded at once
 	uint32_t *ycbcr32 = (uint32_t *) ycbcr;
 
