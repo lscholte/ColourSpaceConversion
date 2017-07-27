@@ -125,7 +125,7 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 	int r4, g4, b4;
 	int y16_1, cb128, cr128, y16_2, y16_3, y16_4;
 	int rP2, gP2, bP2, yP2;
-	uint8_t *rgbPtr = rgb;
+	uint8_t *rgbPtr = rgb + 11;
 	int i = ((rows*cols*3) >> 3) - 1;
 	// Cast so 4 8-bit integers are loaded at once
 	uint32_t *ycbcr32 = (uint32_t *) ycbcr;
@@ -148,44 +148,42 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 		bP2 = 33063*cb128 >> 14;
 
 		yP2 = 38142*y16_4 >> 15;
-		r4 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
-		g4 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
 		b4 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b4;
+		g4 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g4;
+		r4 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r4;
 
 		yP2 = 38142*y16_3 >> 15;
-		r3 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
-		g3 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
 		b3 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b3;
+		g3 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g3;
+		r3 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r3;
 
 		y16_4 = ((ycbcr_tmp << 16) >> 24) - 16;
 		y16_3 = (ycbcr_tmp & 0x000000FF) - 16;
 		ycbcr_tmp = ycbcr32[i-2];
 
 		yP2 = 38142*y16_2 >> 15;
-		r2 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
-		g2 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
 		b2 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b2;
+		g2 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g2;
+		r2 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r2;
 
 		yP2 = 38142*y16_1 >> 15;
-		r1 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
-		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
 		b1 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b1;
+		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g1;
+		r1 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr = r1;
 
-		*rgbPtr++ = r1;
-		*rgbPtr++ = g1;
-		*rgbPtr++ = b1;
-
-		*rgbPtr++ = r2;
-		*rgbPtr++ = g2;
-		*rgbPtr++ = b2;
-
-		*rgbPtr++ = r3;
-		*rgbPtr++ = g3;
-		*rgbPtr++ = b3;
-
-		*rgbPtr++ = r4;
-		*rgbPtr++ = g4;
-		*rgbPtr++ = b4;
+		rgbPtr += 23;
 
 		y16_2 = (ycbcr_tmp >> 24) - 16;
 		cr128 = ((ycbcr_tmp << 8) >> 24) - 128;	
@@ -198,41 +196,38 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 		bP2 = 33063*cb128 >> 14;
 
 		yP2 = 38142*y16_4 >> 15;
-		r4 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
-		g4 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
 		b4 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b4;
+		g4 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g4;
+		r4 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r4;
 
 		yP2 = 38142*y16_3 >> 15;
-		r3 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
-		g3 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
 		b3 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b3;
+		g3 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g3;
+		r3 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r3;
 
 		yP2 = 38142*y16_2 >> 15;
-		r2 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
-		g2 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
 		b2 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b2;
+		g2 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g2;
+		r2 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r2;
 
 		yP2 = 38142*y16_1 >> 15;
-		r1 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
-		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
 		b1 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b1;
+		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g1;
+		r1 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr = r1;
 
-		*rgbPtr++ = r1;
-		*rgbPtr++ = g1;
-		*rgbPtr++ = b1;
-
-		*rgbPtr++ = r2;
-		*rgbPtr++ = g2;
-		*rgbPtr++ = b2;
-
-		*rgbPtr++ = r3;
-		*rgbPtr++ = g3;
-		*rgbPtr++ = b3;
-
-		*rgbPtr++ = r4;
-		*rgbPtr++ = g4;
-		*rgbPtr++ = b4;
-
+		rgbPtr += 23;
 	}
 }
 
