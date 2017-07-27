@@ -9,132 +9,78 @@ int clamp(int n);
 //ycbcr is a rows*cols*3 array of unsigned char (ie [0, 255]). Its contents are modified by this function
 //rows is the number of rows in the image
 //cols is the number of columns in the image
-void toYCbCr(uint8_t * restrict rgb, uint8_t * restrict ycbcr, uint16_t rows, uint16_t cols)
+void toYCbCr(register uint8_t * restrict rgb, uint8_t * restrict ycbcr, uint16_t rows, uint16_t cols)
 {
-	int r1, g1, b1, y1, cb1, cr1;
-	int r2, g2, b2, y2, cb2, cr2;
-	int r3, g3, b3, y3, cb3, cr3;
-	int r4, g4, b4, y4, cb4, cr4;
-	int cbOut, crOut;
+	//int r1, g1, b1, y1, cb1, cr1;
+	//int r2, g2, b2, y2;
+	//int r3, g3, b3, y3;
+	//int r4, g4, b4, y4;
 	uint8_t *ycbcrPtr = ycbcr;
-	int i = ((rows*cols*3) >> 2) - 3;
+	//int i = ((rows*cols*3) >> 2) - 3;
+	int i = rows*cols*3 - 1;
 	// Cast so 4 8-bit integers are loaded at once
-	uint32_t *rgb32 = (uint32_t *) rgb;
-
-	int tmp1, tmp2, tmp3;
+	//uint32_t *rgb32 = (uint32_t *) rgb;
 
 	// load the first 4 bytes
-	uint32_t rgb_tmp = rgb32[i];
+	//uint32_t rgb_tmp = rgb32[i];
+	//uint32_t rgb = rgb_tmp;
 
-	for(; i > 0; i -= 3)
+	int r1, g1, b1, y1, cb1, cr1;
+	uint32_t result;
+	uint32_t *ptr = (uint32_t *) rgb;
+
+	for(; i > 0; i -= 12)
 	{
-		fprintf(stderr, "%d\n", i);
-		// split first 4 bytes into rgb components
-		r1 = rgb_tmp & 0x000000FF;
-		g1 = (rgb_tmp << 16) >> 24;
-		b1 = (rgb_tmp << 8) >> 24;
-		r2 = rgb_tmp >> 24;
 
-		// load the next 4 bytes
-		rgb_tmp = rgb32[i+1];
+		r1 = *ptr & 0x000000FF;
+		g1 = (*ptr << 16) >> 24;
+		b1 = (*ptr << 8) >> 24;
+		y1  =  16 + ((16483*r1 + 33030*g1 + 6423*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		cb1 = 128 + ((-9699*r1 - 19071*g1 + 28770*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		cr1 = 128 + ((28770*r1 - 24117*g1 - 4653*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		result = y1 | (cb1 << 8) | (cr1 << 16);
 
-		__asm__ __volatile__("MULT_16483 %0 %1" : "=r" (tmp1) : "r" (r1));
-		__asm__ __volatile__("MULT_33030 %0 %1" : "=r" (tmp2) : "r" (g1));
-		__asm__ __volatile__("MULT_6423 %0 %1" : "=r" (tmp3) : "r" (b1));
-		y1 = 16 + ((tmp1 + tmp2 + tmp3) >> 16);
+		//__asm__ __volatile__("RGB2YCBCR %0 %1" : "=r" (result) : "r" (*ptr)); //rgb_tmp has first 3 bytes as rgb and last byte we don't care about
+		*ycbcrPtr++ = result & 0x000000FF;
+		*ycbcrPtr++ = (result << 16) >> 24;
+		*ycbcrPtr++ = (result << 8) >> 24;
 
-		__asm__ __volatile__("MULT_N9699 %0 %1" : "=r" (tmp1) : "r" (r1));
-		__asm__ __volatile__("MULT_19071 %0 %1" : "=r" (tmp2) : "r" (g1));
-		__asm__ __volatile__("MULT_28770 %0 %1" : "=r" (tmp3) : "r" (b1));
-		cb1 = 128 + ((tmp1 + tmp2 + tmp3) >> 16);
+		ptr = (uint32_t *) (rgb + 3);
+		//__asm__ __volatile__("RGB2YCBCR %0 %1" : "=r" (result) : "r" (*ptr)); //rgb_tmp has first 3 bytes as rgb and last byte we don't care about
 
-		__asm__ __volatile__("MULT_28770 %0 %1" : "=r" (tmp1) : "r" (r1));
-		__asm__ __volatile__("MULT_24117 %0 %1" : "=r" (tmp2) : "r" (g1));
-		__asm__ __volatile__("MULT_4653 %0 %1" : "=r" (tmp3) : "r" (b1));
-		cr1 = 128 + ((tmp1 + tmp2 + tmp3) >> 16);
-		 
-		// split into rgb components
-		g2 = rgb_tmp & 0x000000FF;
-		b2 = (rgb_tmp << 16) >> 24;
-		r3 = (rgb_tmp << 8) >> 24;
-		g3 = rgb_tmp >> 24;
+		r1 = *ptr & 0x000000FF;
+		g1 = (*ptr << 16) >> 24;
+		b1 = (*ptr << 8) >> 24;
+		y1  =  16 + ((16483*r1 + 33030*g1 + 6423*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		cb1 = 128 + ((-9699*r1 - 19071*g1 + 28770*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		cr1 = 128 + ((28770*r1 - 24117*g1 - 4653*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		result = y1 | (cb1 << 8) | (cr1 << 16);
+		*ycbcrPtr++ = result & 0x000000FF;
 
-		// load the next 4 bytes
-		rgb_tmp = rgb32[i+2];
-
-		__asm__ __volatile__("MULT_16483 %0 %1" : "=r" (tmp1) : "r" (r2));
-		__asm__ __volatile__("MULT_33030 %0 %1" : "=r" (tmp2) : "r" (g2));
-		__asm__ __volatile__("MULT_6423 %0 %1" : "=r" (tmp3) : "r" (b2));
-		y2 = 16 + ((tmp1 + tmp2 + tmp3) >> 16);
-
-		__asm__ __volatile__("MULT_N9699 %0 %1" : "=r" (tmp1) : "r" (r2));
-		__asm__ __volatile__("MULT_19071 %0 %1" : "=r" (tmp2) : "r" (g2));
-		__asm__ __volatile__("MULT_28770 %0 %1" : "=r" (tmp3) : "r" (b2));
-		cb2 = 128 + ((tmp1 + tmp2 + tmp3) >> 16);
-
-		__asm__ __volatile__("MULT_28770 %0 %1" : "=r" (tmp1) : "r" (r2));
-		__asm__ __volatile__("MULT_24117 %0 %1" : "=r" (tmp2) : "r" (g2));
-		__asm__ __volatile__("MULT_4653 %0 %1" : "=r" (tmp3) : "r" (b2));
-		cr2 = 128 + ((tmp1 + tmp2 + tmp3) >> 16);
-
-		// split into rgb components
-		b3 = rgb_tmp & 0x000000FF;
-		r4 = (rgb_tmp << 16) >> 24;
-		g4 = (rgb_tmp << 8) >> 24;
-		b4 = rgb_tmp >> 24;
-
-		// load the next 4 bytes
-		rgb_tmp = rgb32[i-3];
-
-		__asm__ __volatile__("MULT_16483 %0 %1" : "=r" (tmp1) : "r" (r3));
-		__asm__ __volatile__("MULT_33030 %0 %1" : "=r" (tmp2) : "r" (g3));
-		__asm__ __volatile__("MULT_6423 %0 %1" : "=r" (tmp3) : "r" (b3));
-		y3 = 16 + ((tmp1 + tmp2 + tmp3) >> 16);
-
-		__asm__ __volatile__("MULT_N9699 %0 %1" : "=r" (tmp1) : "r" (r3));
-		__asm__ __volatile__("MULT_19071 %0 %1" : "=r" (tmp2) : "r" (g3));
-		__asm__ __volatile__("MULT_28770 %0 %1" : "=r" (tmp3) : "r" (b3));
-		cb3 = 128 + ((tmp1 + tmp2 + tmp3) >> 16);
-
-		__asm__ __volatile__("MULT_28770 %0 %1" : "=r" (tmp1) : "r" (r3));
-		__asm__ __volatile__("MULT_24117 %0 %1" : "=r" (tmp2) : "r" (g3));
-		__asm__ __volatile__("MULT_4653 %0 %1" : "=r" (tmp3) : "r" (b3));
-		cr3 = 128 + ((tmp1 + tmp2 + tmp3) >> 16);
-
-		__asm__ __volatile__("MULT_16483 %0 %1" : "=r" (tmp1) : "r" (r4));
-		__asm__ __volatile__("MULT_33030 %0 %1" : "=r" (tmp2) : "r" (g4));
-		__asm__ __volatile__("MULT_6423 %0 %1" : "=r" (tmp3) : "r" (b4));
-		y4 = 16 + ((tmp1 + tmp2 + tmp3) >> 16);
-
-		__asm__ __volatile__("MULT_N9699 %0 %1" : "=r" (tmp1) : "r" (r4));
-		__asm__ __volatile__("MULT_19071 %0 %1" : "=r" (tmp2) : "r" (g4));
-		__asm__ __volatile__("MULT_28770 %0 %1" : "=r" (tmp3) : "r" (b4));
-		cb4 = 128 + ((tmp1 + tmp2 + tmp3) >> 16);
-
-		__asm__ __volatile__("MULT_28770 %0 %1" : "=r" (tmp1) : "r" (r4));
-		__asm__ __volatile__("MULT_24117 %0 %1" : "=r" (tmp2) : "r" (g4));
-		__asm__ __volatile__("MULT_4653 %0 %1" : "=r" (tmp3) : "r" (b4));
-		cr4 = 128 + ((tmp1 + tmp2 + tmp3) >> 16);
-		
-
-		// Perform downsampling
-	
-		// simple
-//		cbOut = cb1; 
-//		crOut = cr1;
-		
-		// average
-		cbOut = (cb1 + cb2 + cb3 + cb4) >> 2;
-		crOut = (cr1 + cr2 + cr3 + cr4) >> 2;
+		ptr = (uint32_t *) (rgb + 6);
+		//__asm__ __volatile__("RGB2YCBCR %0 %1" : "=r" (result) : "r" (*ptr)); //rgb_tmp has first 3 bytes as rgb and last byte we don't care about
+		r1 = *ptr & 0x000000FF;
+		g1 = (*ptr << 16) >> 24;
+		b1 = (*ptr << 8) >> 24;
+		y1  =  16 + ((16483*r1 + 33030*g1 + 6423*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		cb1 = 128 + ((-9699*r1 - 19071*g1 + 28770*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		cr1 = 128 + ((28770*r1 - 24117*g1 - 4653*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		result = y1 | (cb1 << 8) | (cr1 << 16);
+		*ycbcrPtr++ = result & 0x000000FF;
 
 
-		// Set output values
-		*ycbcrPtr++ = y1;
-		*ycbcrPtr++ = cbOut;
-		*ycbcrPtr++ = crOut;
-		*ycbcrPtr++ = y2;
-		*ycbcrPtr++ = y3;
-		*ycbcrPtr++ = y4;
+		ptr = (uint32_t *) (rgb + 9);
+		//__asm__ __volatile__("RGB2YCBCR %0 %1" : "=r" (result) : "r" (*ptr)); //rgb_tmp has first 3 bytes as rgb and last byte we don't care about
+		r1 = *ptr & 0x000000FF;
+		g1 = (*ptr << 16) >> 24;
+		b1 = (*ptr << 8) >> 24;
+		y1  =  16 + ((16483*r1 + 33030*g1 + 6423*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		cb1 = 128 + ((-9699*r1 - 19071*g1 + 28770*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		cr1 = 128 + ((28770*r1 - 24117*g1 - 4653*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		result = y1 | (cb1 << 8) | (cr1 << 16);
+		*ycbcrPtr++ = result & 0x000000FF;
+
+		ptr = (uint32_t *) (rgb + 12);
 	
 	}
 }
@@ -166,12 +112,10 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 	int r4, g4, b4;
 	int y16_1, cb128, cr128, y16_2, y16_3, y16_4;
 	int rP2, gP2, bP2, yP2;
-	uint8_t *rgbPtr = rgb;
-	int i = (rows*cols*3 >> 3) - 1;
+	uint8_t *rgbPtr = rgb + 11;
+	int i = ((rows*cols*3) >> 3) - 1;
 	// Cast so 4 8-bit integers are loaded at once
 	uint32_t *ycbcr32 = (uint32_t *) ycbcr;
-
-	int tmp1, tmp2;
 
 	uint32_t ycbcr_tmp = ycbcr32[i];
 
@@ -186,60 +130,47 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 		cb128 = (ycbcr_tmp >> 24) - 128;
 		y16_1 = ((ycbcr_tmp << 8) >> 24) - 16;
 
-		__asm__ __volatile__("MULT_52298 %0 %1" : "=r" (tmp1) : "r" (cr128));
-		rP2 = tmp1 >> 15;
+		rP2 = 52298*cr128 >> 15;
+		gP2 = (-53281*cr128 - 25625*cb128) >> 16;
+		bP2 = 33063*cb128 >> 14;
 
-		__asm__ __volatile__("MULT_N53281 %0 %1" : "=r" (tmp1) : "r" (cr128));
-		__asm__ __volatile__("MULT_25625 %0 %1" : "=r" (tmp2) : "r" (cb128));
-		gP2 = (tmp1 - tmp2) >> 16;
-
-		__asm__ __volatile__("MULT_33063 %0 %1" : "=r" (tmp1) : "r" (cb128));
-		bP2 = tmp1 >> 14;
-
-		__asm__ __volatile__("MULT_38142 %0 %1" : "=r" (tmp1) : "r" (y16_4));
-		yP2 = tmp1 >> 15;
-		r4 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
-		g4 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		yP2 = 38142*y16_4 >> 15;
 		b4 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b4;
+		g4 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g4;
+		r4 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r4;
 
-		__asm__ __volatile__("MULT_38142 %0 %1" : "=r" (tmp1) : "r" (y16_3));
-		yP2 = tmp1 >> 15;
-		r3 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
-		g3 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		yP2 = 38142*y16_3 >> 15;
 		b3 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b3;
+		g3 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g3;
+		r3 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r3;
 
 		y16_4 = ((ycbcr_tmp << 16) >> 24) - 16;
 		y16_3 = (ycbcr_tmp & 0x000000FF) - 16;
 		ycbcr_tmp = ycbcr32[i-2];
 
-		__asm__ __volatile__("MULT_38142 %0 %1" : "=r" (tmp1) : "r" (y16_2));
-		yP2 = tmp1 >> 15;
-
-		r2 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
-		g2 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		yP2 = 38142*y16_2 >> 15;
 		b2 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b2;
+		g2 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g2;
+		r2 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r2;
 
-		__asm__ __volatile__("MULT_38142 %0 %1" : "=r" (tmp1) : "r" (y16_1));
-		yP2 = tmp1 >> 15;
-		r1 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
-		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		yP2 = 38142*y16_1 >> 15;
 		b1 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b1;
+		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g1;
+		r1 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr = r1;
 
-		*rgbPtr++ = r1;
-		*rgbPtr++ = g1;
-		*rgbPtr++ = b1;
-
-		*rgbPtr++ = r2;
-		*rgbPtr++ = g2;
-		*rgbPtr++ = b2;
-
-		*rgbPtr++ = r3;
-		*rgbPtr++ = g3;
-		*rgbPtr++ = b3;
-
-		*rgbPtr++ = r4;
-		*rgbPtr++ = g4;
-		*rgbPtr++ = b4;
+		rgbPtr += 23;
 
 		y16_2 = (ycbcr_tmp >> 24) - 16;
 		cr128 = ((ycbcr_tmp << 8) >> 24) - 128;	
@@ -247,56 +178,43 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 		y16_1 = (ycbcr_tmp & 0x000000FF) - 16;
 		ycbcr_tmp = ycbcr32[i-3];
 
-		__asm__ __volatile__("MULT_52298 %0 %1" : "=r" (tmp1) : "r" (cr128));
-		rP2 = tmp1 >> 15;
+		rP2 = 52298*cr128 >> 15;
+		gP2 = (-53281*cr128 - 25625*cb128) >> 16;
+		bP2 = 33063*cb128 >> 14;
 
-		__asm__ __volatile__("MULT_N53281 %0 %1" : "=r" (tmp1) : "r" (cr128));
-		__asm__ __volatile__("MULT_25625 %0 %1" : "=r" (tmp2) : "r" (cb128));
-		gP2 = (tmp1 - tmp2) >> 16;
-
-		__asm__ __volatile__("MULT_33063 %0 %1" : "=r" (tmp1) : "r" (cb128));
-		bP2 = tmp1 >> 14;
-
-		__asm__ __volatile__("MULT_38142 %0 %1" : "=r" (tmp1) : "r" (y16_4));
-		yP2 = tmp1 >> 15;
-		r4 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
-		g4 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		yP2 = 38142*y16_4 >> 15;
 		b4 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b4;
+		g4 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g4;
+		r4 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r4;
 
-		__asm__ __volatile__("MULT_38142 %0 %1" : "=r" (tmp1) : "r" (y16_3));
-		yP2 = tmp1 >> 15;
-		r3 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
-		g3 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		yP2 = 38142*y16_3 >> 15;
 		b3 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b3;
+		g3 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g3;
+		r3 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r3;
 
-		__asm__ __volatile__("MULT_38142 %0 %1" : "=r" (tmp1) : "r" (y16_2));
-		yP2 = tmp1 >> 15;
-		r2 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
-		g2 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		yP2 = 38142*y16_2 >> 15;
 		b2 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b2;
+		g2 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g2;
+		r2 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r2;
 
-		__asm__ __volatile__("MULT_38142 %0 %1" : "=r" (tmp1) : "r" (y16_1));
-		yP2 = tmp1 >> 15;
-		r1 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
-		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		yP2 = 38142*y16_1 >> 15;
 		b1 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b1;
+		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g1;
+		r1 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr = r1;
 
-		*rgbPtr++ = r1;
-		*rgbPtr++ = g1;
-		*rgbPtr++ = b1;
-
-		*rgbPtr++ = r2;
-		*rgbPtr++ = g2;
-		*rgbPtr++ = b2;
-
-		*rgbPtr++ = r3;
-		*rgbPtr++ = g3;
-		*rgbPtr++ = b3;
-
-		*rgbPtr++ = r4;
-		*rgbPtr++ = g4;
-		*rgbPtr++ = b4;
-
+		rgbPtr += 23;
 	}
 }
 
