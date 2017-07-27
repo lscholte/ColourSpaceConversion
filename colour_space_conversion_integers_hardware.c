@@ -86,6 +86,7 @@ void toYCbCr(register uint8_t * restrict rgb, uint8_t * restrict ycbcr, uint16_t
 }
 
 
+
 int clamp(int n)
 {
     if(n < 0)
@@ -106,21 +107,139 @@ int clamp(int n)
 //cols is the number of columns in the image
 void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint16_t cols)
 {
-	int r1, g1, b1;
-	int r2, g2, b2;
-	int r3, g3, b3;
-	int r4, g4, b4;
-	int y16_1, cb128, cr128, y16_2, y16_3, y16_4;
-	int rP2, gP2, bP2, yP2;
-	uint8_t *rgbPtr = rgb + 11;
-	int i = ((rows*cols*3) >> 3) - 1;
-	// Cast so 4 8-bit integers are loaded at once
-	uint32_t *ycbcr32 = (uint32_t *) ycbcr;
 
-	uint32_t ycbcr_tmp = ycbcr32[i];
+	int y16_1, cb128, cr128, rP2, gP2, bP2, yP2, r1, g1, b1;
 
-	for(; i > 0; i -= 3)
+	uint32_t result;
+	uint32_t *ptr = (uint32_t *) ycbcr;
+	uint32_t ycbcr_value;
+
+	for(int i = ((rows*cols*3) >> 1) - 1; i > 0; i -= 6)
 	{
+		
+		ycbcr_value = *ptr;
+
+
+		y16_1 = (ycbcr_value & 0x000000FF) - 16;
+		cb128 = ((ycbcr_value << 16) >> 24) - 128;
+		cr128 = ((ycbcr_value << 8) >> 24) - 128;		
+
+
+		rP2 = 52298*cr128 >> 15;
+		gP2 = (-53281*cr128 - 25625*cb128) >> 16;
+		bP2 = 33063*cb128 >> 14;
+
+
+		yP2 = 38142*y16_1 >> 15;
+		r1 = clamp(yP2 + rP2); //this might exceed 255
+		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		b1 = clamp(yP2 + bP2); //this might exceed 255
+
+		result = r1 | (g1 << 8) | (b1 << 16); 
+
+		//__asm__ __volatile__("YCBCR2RGB %0 %1" : "=r" (result) : "r" (ycbcr_value)); //rgb_tmp has first 3 bytes as rgb and last byte we don't care about
+		*ptr++ = result & 0x000000FF;
+		*ptr++ = (result << 16) >> 24;
+		*ptr++ = (result << 8) >> 24;
+
+
+
+
+
+
+
+
+
+		ptr = (uint32_t *) (ycbcr + 3);
+
+		ycbcr_value = (*ptr & 0x000000FF) | (ycbcr_value & 0xFFFFFF00);
+
+		y16_1 = (ycbcr_value & 0x000000FF) - 16;
+		cb128 = ((ycbcr_value << 16) >> 24) - 128;
+		cr128 = ((ycbcr_value << 8) >> 24) - 128;		
+
+
+		rP2 = 52298*cr128 >> 15;
+		gP2 = (-53281*cr128 - 25625*cb128) >> 16;
+		bP2 = 33063*cb128 >> 14;
+
+
+		yP2 = 38142*y16_1 >> 15;
+		r1 = clamp(yP2 + rP2); //this might exceed 255
+		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		b1 = clamp(yP2 + bP2); //this might exceed 255
+
+		result = r1 | (g1 << 8) | (b1 << 16); 
+
+		//__asm__ __volatile__("YCBCR2RGB %0 %1" : "=r" (result) : "r" (ycbcr_value)); //rgb_tmp has first 3 bytes as rgb and last byte we don't care about
+		*ptr++ = result & 0x000000FF;
+		*ptr++ = (result << 16) >> 24;
+		*ptr++ = (result << 8) >> 24;
+
+
+
+
+
+
+
+
+		ycbcr_value = (*ptr & 0x0000FF00) | (ycbcr_value & 0xFFFFFF00);
+
+		y16_1 = (ycbcr_value & 0x000000FF) - 16;
+		cb128 = ((ycbcr_value << 16) >> 24) - 128;
+		cr128 = ((ycbcr_value << 8) >> 24) - 128;		
+
+
+		rP2 = 52298*cr128 >> 15;
+		gP2 = (-53281*cr128 - 25625*cb128) >> 16;
+		bP2 = 33063*cb128 >> 14;
+
+
+		yP2 = 38142*y16_1 >> 15;
+		r1 = clamp(yP2 + rP2); //this might exceed 255
+		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		b1 = clamp(yP2 + bP2); //this might exceed 255
+
+		result = r1 | (g1 << 8) | (b1 << 16); 
+
+		//__asm__ __volatile__("YCBCR2RGB %0 %1" : "=r" (result) : "r" (ycbcr_value)); //rgb_tmp has first 3 bytes as rgb and last byte we don't care about
+		*ptr++ = result & 0x000000FF;
+		*ptr++ = (result << 16) >> 24;
+		*ptr++ = (result << 8) >> 24;
+
+
+
+
+
+
+
+
+		ycbcr_value = (*ptr & 0x00FF0000) | (ycbcr_value & 0xFFFFFF00);
+
+		y16_1 = (ycbcr_value & 0x000000FF) - 16;
+		cb128 = ((ycbcr_value << 16) >> 24) - 128;
+		cr128 = ((ycbcr_value << 8) >> 24) - 128;		
+
+
+		rP2 = 52298*cr128 >> 15;
+		gP2 = (-53281*cr128 - 25625*cb128) >> 16;
+		bP2 = 33063*cb128 >> 14;
+
+
+		yP2 = 38142*y16_1 >> 15;
+		r1 = clamp(yP2 + rP2); //this might exceed 255
+		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		b1 = clamp(yP2 + bP2); //this might exceed 255
+
+		result = r1 | (g1 << 8) | (b1 << 16); 
+
+		//__asm__ __volatile__("YCBCR2RGB %0 %1" : "=r" (result) : "r" (ycbcr_value)); //rgb_tmp has first 3 bytes as rgb and last byte we don't care about
+		*ptr++ = result & 0x000000FF;
+		*ptr++ = (result << 16) >> 24;
+		*ptr++ = (result << 8) >> 24;
+
+
+/*
 		y16_4 = (ycbcr_tmp >> 24) - 16;
 		y16_3 = ((ycbcr_tmp << 8) >> 24) - 16;
 		y16_2 = ((ycbcr_tmp << 16) >> 24) - 16;
@@ -215,6 +334,8 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 		*rgbPtr = r1;
 
 		rgbPtr += 23;
+
+*/
 	}
 }
 
