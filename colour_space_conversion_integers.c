@@ -3,6 +3,8 @@
 #include <assert.h>
 #include <stdint.h>
 
+int clamp(int n);
+
 //rgb is a rows*cols*3 array of unsigned char (ie [0, 255])
 //ycbcr is a rows*cols*3 array of unsigned char (ie [0, 255]). Its contents are modified by this function
 //rows is the number of rows in the image
@@ -15,70 +17,84 @@ void toYCbCr(uint8_t * restrict rgb, uint8_t * restrict ycbcr, uint16_t rows, ui
 	int r4, g4, b4, y4, cb4, cr4;
 	int cbOut, crOut;
 	uint8_t *ycbcrPtr = ycbcr;
-	uint32_t rgb_tmp;
-
+	int i = ((rows*cols*3) >> 2) - 3;
 	// Cast so 4 8-bit integers are loaded at once
 	uint32_t *rgb32 = (uint32_t *) rgb;
 
-	for(int i = ((rows*cols*3) >> 2) - 3; i > 0; i -= 3)
+	// load the first 4 bytes
+	uint32_t rgb_tmp = rgb32[i];
+
+	for(; i > 0; i -= 3)
 	{
-		// Pixel 1
-		rgb_tmp = rgb32[i];
+		// split first 4 bytes into rgb components
 		r1 = rgb_tmp & 0x000000FF;
 		g1 = (rgb_tmp << 16) >> 24;
 		b1 = (rgb_tmp << 8) >> 24;
+		r2 = rgb_tmp >> 24;
+
+		// load the next 4 bytes
+		rgb_tmp = rgb32[i+1];
 
 		y1  =  16 + ((16483*r1 + 33030*g1 + 6423*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		*ycbcrPtr++ = y1;
 		cb1 = 128 + ((-9699*r1 - 19071*g1 + 28770*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		*ycbcrPtr++ = cbOut;
 		cr1 = 128 + ((28770*r1 - 24117*g1 - 4653*b1) >> 16); //should be guaranteed to be in range of [0, 255]
+		*ycbcrPtr++ = crOut;
 		 
-		// Pixel 2
-		r2 = rgb_tmp >> 24;
-		rgb_tmp = rgb32[i+1];
+		// split into rgb components
 		g2 = rgb_tmp & 0x000000FF;
 		b2 = (rgb_tmp << 16) >> 24;
-
-		y2  =  16 + ((16483*r2 + 33030*g2 + 6423*b2) >> 16); //should be guaranteed to be in range of [0, 255]
-		cb2 = 128 + ((-9699*r2 - 19071*g2 + 28770*b2) >> 16); //should be guaranteed to be in range of [0, 255]
-		cr2 = 128 + ((28770*r2 - 24117*g2 - 4653*b2) >> 16); //should be guaranteed to be in range of [0, 255]
-
-		// Pixel 3
 		r3 = (rgb_tmp << 8) >> 24;
 		g3 = rgb_tmp >> 24;
+
+		// load the next 4 bytes
 		rgb_tmp = rgb32[i+2];
+
+		y2  =  16 + ((16483*r2 + 33030*g2 + 6423*b2) >> 16); //should be guaranteed to be in range of [0, 255]
+		*ycbcrPtr++ = y2;
+//		cb2 = 128 + ((-9699*r2 - 19071*g2 + 28770*b2) >> 16); //should be guaranteed to be in range of [0, 255]
+//		cr2 = 128 + ((28770*r2 - 24117*g2 - 4653*b2) >> 16); //should be guaranteed to be in range of [0, 255]
+
+		// split into rgb components
 		b3 = rgb_tmp & 0x000000FF;
-
-		y3  =  16 + ((16483*r3 + 33030*g3 + 6423*b3) >> 16); //should be guaranteed to be in range of [0, 255]
-		cb3 = 128 + ((-9699*r3 - 19071*g3 + 28770*b3) >> 16); //should be guaranteed to be in range of [0, 255]
-		cr3 = 128 + ((28770*r3 - 24117*g3 - 4653*b3) >> 16); //should be guaranteed to be in range of [0, 255]
-
-		// Pixel 4
 		r4 = (rgb_tmp << 16) >> 24;
 		g4 = (rgb_tmp << 8) >> 24;
 		b4 = rgb_tmp >> 24;
 
+		// load the next 4 bytes
+		rgb_tmp = rgb32[i-3];
+
+		y3  =  16 + ((16483*r3 + 33030*g3 + 6423*b3) >> 16); //should be guaranteed to be in range of [0, 255]
+		*ycbcrPtr++ = y3;
+//		cb3 = 128 + ((-9699*r3 - 19071*g3 + 28770*b3) >> 16); //should be guaranteed to be in range of [0, 255]
+//		cr3 = 128 + ((28770*r3 - 24117*g3 - 4653*b3) >> 16); //should be guaranteed to be in range of [0, 255]
+
 		y4  =  16 + ((16483*r4 + 33030*g4 + 6423*b4) >> 16); //should be guaranteed to be in range of [0, 255]
-		cb4 = 128 + ((-9699*r4 - 19071*g4 + 28770*b4) >> 16); //should be guaranteed to be in range of [0, 255]
-		cr4 = 128 + ((28770*r4 - 24117*g4 - 4653*b4) >> 16); //should be guaranteed to be in range of [0, 255]
+		*ycbcrPtr++ = y4;
+//		cb4 = 128 + ((-9699*r4 - 19071*g4 + 28770*b4) >> 16); //should be guaranteed to be in range of [0, 255]
+//		cr4 = 128 + ((28770*r4 - 24117*g4 - 4653*b4) >> 16); //should be guaranteed to be in range of [0, 255]
 		
+
 		// Perform downsampling
 	
 		// simple
-//		cbOut = cb1; 
-//		crOut = cr1;
+		cbOut = cb1; 
+		crOut = cr1;
 		
 		// average
-		cbOut = (cb1 + cb2 + cb3 + cb4) >> 2;
-		crOut = (cr1 + cr2 + cr3 + cr4) >> 2;
+//		cbOut = (cb1 + cb2 + cb3 + cb4) >> 2;
+//		crOut = (cr1 + cr2 + cr3 + cr4) >> 2;
 
 
 		// Set output values
-		*ycbcrPtr++ = y1;
-		*ycbcrPtr++ = cbOut;
-		*ycbcrPtr++ = crOut;
-		*ycbcrPtr++ = y2;
-		*ycbcrPtr++ = y3;
-		*ycbcrPtr++ = y4;
+//		*ycbcrPtr++ = y1;
+//		*ycbcrPtr++ = cbOut;
+//		*ycbcrPtr++ = crOut;
+//		*ycbcrPtr++ = y2;
+//		*ycbcrPtr++ = y3;
+//		*ycbcrPtr++ = y4;
+	
 	}
 }
 
@@ -109,21 +125,21 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 	int r4, g4, b4;
 	int y16_1, cb128, cr128, y16_2, y16_3, y16_4;
 	int rP2, gP2, bP2, yP2;
-	uint8_t *rgbPtr = rgb;
-	uint32_t ycbcr_tmp;
-
+	uint8_t *rgbPtr = rgb + 11;
+	int i = ((rows*cols*3) >> 3) - 1;
 	// Cast so 4 8-bit integers are loaded at once
 	uint32_t *ycbcr32 = (uint32_t *) ycbcr;
 
-	for(int i = (rows*cols*3 >> 3) - 1; i > 0; i -= 3)
-	{
+	uint32_t ycbcr_tmp = ycbcr32[i];
 
-		ycbcr_tmp = ycbcr32[i];
+	for(; i > 0; i -= 3)
+	{
 		y16_4 = (ycbcr_tmp >> 24) - 16;
 		y16_3 = ((ycbcr_tmp << 8) >> 24) - 16;
 		y16_2 = ((ycbcr_tmp << 16) >> 24) - 16;
-		cr128 = (ycbcr_tmp & 0x000000FF) - 128;	
-		ycbcr_tmp = ycbcr32[i-1];	
+		cr128 = (ycbcr_tmp & 0x000000FF) - 128;
+
+		ycbcr_tmp = ycbcr32[i-1];
 		cb128 = (ycbcr_tmp >> 24) - 128;
 		y16_1 = ((ycbcr_tmp << 8) >> 24) - 16;
 
@@ -131,91 +147,87 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 		gP2 = (-53281*cr128 - 25625*cb128) >> 16;
 		bP2 = 33063*cb128 >> 14;
 
-		yP2 = 38142*y16_1 >> 15;
-		r1 = clamp(yP2 + rP2); //this might exceed 255
-		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
-		b1 = clamp(yP2 + bP2); //this might exceed 255
-
-		yP2 = 38142*y16_2 >> 15;
-		r2 = clamp(yP2 + rP2); //this might exceed 255
-		g2 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
-		b2 = clamp(yP2 + bP2); //this might exceed 255
+		yP2 = 38142*y16_4 >> 15;
+		b4 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b4;
+		g4 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g4;
+		r4 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r4;
 
 		yP2 = 38142*y16_3 >> 15;
-		r3 = clamp(yP2 + rP2); //this might exceed 255
+		b3 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b3;
 		g3 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
-		b3 = clamp(yP2 + bP2); //this might exceed 255
-
-		yP2 = 38142*y16_4 >> 15;
-		r4 = clamp(yP2 + rP2); //this might exceed 255
-		g4 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
-		b4 = clamp(yP2 + bP2); //this might exceed 255
-
-		*rgbPtr++ = r1;
-		*rgbPtr++ = g1;
-		*rgbPtr++ = b1;
-
-		*rgbPtr++ = r2;
-		*rgbPtr++ = g2;
-		*rgbPtr++ = b2;
-
-		*rgbPtr++ = r3;
-		*rgbPtr++ = g3;
-		*rgbPtr++ = b3;
-
-		*rgbPtr++ = r4;
-		*rgbPtr++ = g4;
-		*rgbPtr++ = b4;
-
+		*rgbPtr-- = g3;
+		r3 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r3;
 
 		y16_4 = ((ycbcr_tmp << 16) >> 24) - 16;
 		y16_3 = (ycbcr_tmp & 0x000000FF) - 16;
-		ycbcr_tmp = ycbcr32[i-2];	
+		ycbcr_tmp = ycbcr32[i-2];
+
+		yP2 = 38142*y16_2 >> 15;
+		b2 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b2;
+		g2 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g2;
+		r2 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r2;
+
+		yP2 = 38142*y16_1 >> 15;
+		b1 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b1;
+		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g1;
+		r1 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr = r1;
+
+		rgbPtr += 23;
+
 		y16_2 = (ycbcr_tmp >> 24) - 16;
 		cr128 = ((ycbcr_tmp << 8) >> 24) - 128;	
 		cb128 = ((ycbcr_tmp << 16) >> 24)- 128;
 		y16_1 = (ycbcr_tmp & 0x000000FF) - 16;
+		ycbcr_tmp = ycbcr32[i-3];
 
 		rP2 = 52298*cr128 >> 15;
 		gP2 = (-53281*cr128 - 25625*cb128) >> 16;
 		bP2 = 33063*cb128 >> 14;
 
-		yP2 = 38142*y16_1 >> 15;
-		r1 = clamp(yP2 + rP2); //this might exceed 255
-		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
-		b1 = clamp(yP2 + bP2); //this might exceed 255
-
-		yP2 = 38142*y16_2 >> 15;
-		r2 = clamp(yP2 + rP2); //this might exceed 255
-		g2 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
-		b2 = clamp(yP2 + bP2); //this might exceed 255
+		yP2 = 38142*y16_4 >> 15;
+		b4 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b4;
+		g4 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g4;
+		r4 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r4;
 
 		yP2 = 38142*y16_3 >> 15;
-		r3 = clamp(yP2 + rP2); //this might exceed 255
+		b3 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b3;
 		g3 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
-		b3 = clamp(yP2 + bP2); //this might exceed 255
+		*rgbPtr-- = g3;
+		r3 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r3;
 
-		yP2 = 38142*y16_4 >> 15;
-		r4 = clamp(yP2 + rP2); //this might exceed 255
-		g4 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
-		b4 = clamp(yP2 + bP2); //this might exceed 255
+		yP2 = 38142*y16_2 >> 15;
+		b2 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b2;
+		g2 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g2;
+		r2 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = r2;
 
-		*rgbPtr++ = r1;
-		*rgbPtr++ = g1;
-		*rgbPtr++ = b1;
+		yP2 = 38142*y16_1 >> 15;
+		b1 = clamp(yP2 + bP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = b1;
+		g1 = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
+		*rgbPtr-- = g1;
+		r1 = clamp(yP2 + rP2); //this could be less than 0 or greater than 255
+		*rgbPtr = r1;
 
-		*rgbPtr++ = r2;
-		*rgbPtr++ = g2;
-		*rgbPtr++ = b2;
-
-		*rgbPtr++ = r3;
-		*rgbPtr++ = g3;
-		*rgbPtr++ = b3;
-
-		*rgbPtr++ = r4;
-		*rgbPtr++ = g4;
-		*rgbPtr++ = b4;
-
+		rgbPtr += 23;
 	}
 }
 

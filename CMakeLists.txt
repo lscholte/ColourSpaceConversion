@@ -10,7 +10,7 @@ if(COMPILE_ARM)
 endif()
 
 #Use C99 and enable all compiler warnings
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -save-temps -std=c99 -Wall") 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -save-temps -std=c99 -Wall -O3") 
 
 add_executable(converter "colour_space_conversion_integers.c")
 add_executable(createImage "write_png.c" "stb_image_write.h")
