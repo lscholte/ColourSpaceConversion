@@ -3,8 +3,6 @@
 #include <assert.h>
 #include <stdint.h>
 
-int clamp(int n);
-
 //rgb is a rows*cols*3 array of unsigned char (ie [0, 255])
 //ycbcr is a rows*cols*3 array of unsigned char (ie [0, 255]). Its contents are modified by this function
 //rows is the number of rows in the image
@@ -41,21 +39,6 @@ void toYCbCr(register uint8_t * restrict rgb, uint8_t * restrict ycbcr, uint16_t
 
 		ptr = (uint32_t *) (rgb + 12);
 	}
-}
-
-
-int clamp(int n)
-{
-    if(n < 0)
-    {
-        return 0;
-    }
-    else if(n > 255)
-    {
-        return 255;
-    }
-
-    return n;
 }
 
 //ycbcr is a rows*cols*3 array of unsigned char (ie [0, 255])
