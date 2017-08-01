@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdint.h>
+#include <string.h>
 
 int clamp(int n);
 
@@ -12,45 +13,63 @@ int clamp(int n);
 void toYCbCr(register uint8_t * restrict rgb, uint8_t * restrict ycbcr, uint16_t rows, uint16_t cols)
 {
 	uint8_t *ycbcrPtr = ycbcr;
-	int r, g, b;
-	uint32_t *ptr = (uint32_t *) rgb;
+	uint8_t r, g, b;
+	uint32_t *rgbPtr = (uint32_t *) rgb;
+	uint32_t rgb_value;
 
 	for(int i = rows*cols*3 - 1; i > 0; i -= 12)
 	{
 
-		r = *ptr & 0x000000FF;
-		g = (*ptr << 16) >> 24;
-		b = (*ptr << 8) >> 24;
-        
-		*ycbcrPtr++ =  16 + ((16483*r + 33030*g + 6423*b) >> 16); //should be guaranteed to be in range of [0, 255]
-		*ycbcrPtr++ = 128 + ((-9699*r - 19071*g + 28770*b) >> 16); //should be guaranteed to be in range of [0, 255]
-		*ycbcrPtr++ = 128 + ((28770*r - 24117*g - 4653*b) >> 16); //should be guaranteed to be in range of [0, 255]
+		rgb_value = *rgbPtr;
 
-		ptr = (uint32_t *) (rgb + 3);
+		//Grab the 3 8-bit numbers that are stored in a 32-bit number
+		r = rgb_value & 0x000000FF;
+		g = (rgb_value << 16) >> 24;
+		b = (rgb_value << 8) >> 24;
+        
+		//Calculate the Y, Cb, and Cr (8-bit) values and store them in the ycbcr array
+		*ycbcrPtr++ =  16 + ((16483*r + 33030*g + 6423*b) >> 16);
+		*ycbcrPtr++ = 128 + ((-9699*r - 19071*g + 28770*b) >> 16);
+		*ycbcrPtr++ = 128 + ((28770*r - 24117*g - 4653*b) >> 16);
 
-		r = *ptr & 0x000000FF;
-		g = (*ptr << 16) >> 24;
-		b = (*ptr << 8) >> 24;
-        
-		*ycbcrPtr++ = 16 + ((16483*r + 33030*g + 6423*b) >> 16); //should be guaranteed to be in range of [0, 255]
+		//Move the rgb pointer up by 3 bytes to grab the next pixel as a 32-bit value
+		rgbPtr = (uint32_t *) (((uint8_t *) rgbPtr) + 3);
+		rgb_value = *rgbPtr;
 
-		ptr = (uint32_t *) (rgb + 6);
+		//Grab the 3 8-bit numbers that are stored in a 32-bit number
+		r = rgb_value & 0x000000FF;
+		g = (rgb_value << 16) >> 24;
+		b = (rgb_value << 8) >> 24;
         
-		r = *ptr & 0x000000FF;
-		g = (*ptr << 16) >> 24;
-		b = (*ptr << 8) >> 24;
+		//Calculate the Y (8-bit) value and store it in the ycbcr array
+		*ycbcrPtr++ = 16 + ((16483*r + 33030*g + 6423*b) >> 16);
+
+		//Move the rgb pointer up by 3 bytes to grab the next pixel as a 32-bit value
+		rgbPtr = (uint32_t *) (((uint8_t *) rgbPtr) + 3);
+		rgb_value = *rgbPtr;
         
-		*ycbcrPtr++ = 16 + ((16483*r + 33030*g + 6423*b) >> 16); //should be guaranteed to be in range of [0, 255]
+		//Grab the 3 8-bit numbers that are stored in a 32-bit number
+		r = rgb_value & 0x000000FF;
+		g = (rgb_value << 16) >> 24;
+		b = (rgb_value << 8) >> 24;
         
-		ptr = (uint32_t *) (rgb + 9);
+		//Calculate the Y (8-bit) value and store it in the ycbcr array
+		*ycbcrPtr++ = 16 + ((16483*r + 33030*g + 6423*b) >> 16);
         
-		r = *ptr & 0x000000FF;
-		g = (*ptr << 16) >> 24;
-		b = (*ptr << 8) >> 24;
+		//Move the rgb pointer up by 3 bytes to grab the next pixel as a 32-bit value
+		rgbPtr = (uint32_t *) (((uint8_t *) rgbPtr) + 3);
+		rgb_value = *rgbPtr;
         
-		*ycbcrPtr++ = 16 + ((16483*r + 33030*g + 6423*b) >> 16); //should be guaranteed to be in range of [0, 255]
+		//Grab the 3 8-bit numbers that are stored in a 32-bit number
+		r = rgb_value & 0x000000FF;
+		g = (rgb_value << 16) >> 24;
+		b = (rgb_value << 8) >> 24;
         
-		ptr = (uint32_t *) (rgb + 12);
+		//Calculate the Y (8-bit) value and store it in the ycbcr array
+		*ycbcrPtr++ = 16 + ((16483*r + 33030*g + 6423*b) >> 16);
+        
+		//Move the rgb pointer up by 3 bytes to grab the next pixel as a 32-bit value
+		rgbPtr = (uint32_t *) (((uint8_t *) rgbPtr) + 3);
 	
 	}
 }
@@ -78,51 +97,65 @@ int clamp(int n)
 void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint16_t cols)
 {
 
-	int y16_1, y16_2, y16_3, y16_4, cb128, cr128, rP2, gP2, bP2, yP2;
+	int32_t y16_1, y16_2, y16_3, y16_4, cb128, cr128;
+	int32_t rP2, gP2, bP2, yP2;
 
-	uint32_t *ptr = (uint32_t *) ycbcr;
+	uint32_t *ycbcrPtr = (uint32_t *) ycbcr;
+	uint8_t *rgbPtr = rgb;
+
 	uint32_t ycbcr_value;
 
 	for(int i = ((rows*cols*3) >> 1) - 1; i > 0; i -= 6)
 	{
 		
-		ycbcr_value = *ptr;
+		ycbcr_value = *ycbcrPtr;
 
+		//Grab the 3 8-bit numbers that are stored in a 32-bit number
 		y16_1 = (ycbcr_value & 0x000000FF) - 16;
 		cb128 = ((ycbcr_value << 16) >> 24) - 128;
 		cr128 = ((ycbcr_value << 8) >> 24) - 128;		
 
+		//These values are used several times when coverting from
+		//YCbCr to RGB
 		rP2 = 52298*cr128 >> 15;
 		gP2 = (-53281*cr128 - 25625*cb128) >> 16;
 		bP2 = 33063*cb128 >> 14;
 
+		//Calculate the r, g, and b (8-bit) values and store it in the rgb array
 		yP2 = 38142*y16_1 >> 15;
-		*ptr++ = clamp(yP2 + rP2); //this might exceed 255
-		*ptr++ = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
-		*ptr++ = clamp(yP2 + bP2); //this might exceed 255
+		*rgbPtr++ = clamp(yP2 + rP2);
+		*rgbPtr++ = clamp(yP2 + gP2);
+		*rgbPtr++ = clamp(yP2 + bP2);
 
-		ptr = (uint32_t *) (ycbcr + 3);
+		//Move the ycbcr pointer up by 3 bytes to grab the next 3 Y (8-bit) values as a 32-bit value
+		ycbcrPtr = (uint32_t *) (((uint8_t *) ycbcrPtr) + 3);
+		ycbcr_value = *ycbcrPtr;
 
-		ycbcr_value = *ptr;
-
+		//Grab the 3 8-bit numbers that are stored in a 32-bit number
 		y16_2 = (ycbcr_value & 0x000000FF) - 16;
 		y16_3 = ((ycbcr_value << 16) >> 24) - 16;
-		y16_4 = ((ycbcr_value << 8) >> 24) - 16;		
+		y16_4 = ((ycbcr_value << 8) >> 24) - 16;
 
+		//Move the ycbcr pointer up by 3 bytes to grab the next Y, Cb, and Cr (8-bit) values as a 32-bit value
+		ycbcrPtr = (uint32_t *) (((uint8_t *) ycbcrPtr) + 3);
+
+		//Calculate the r, g, and b (8-bit) values and store it in the rgb array
 		yP2 = 38142*y16_2 >> 15;
-		*ptr++ = clamp(yP2 + rP2); //this might exceed 255
-		*ptr++ = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
-		*ptr++ = clamp(yP2 + bP2); //this might exceed 255
+		*rgbPtr++ = clamp(yP2 + rP2);
+		*rgbPtr++ = clamp(yP2 + gP2);
+		*rgbPtr++ = clamp(yP2 + bP2);
         
+		//Calculate the r, g, and b (8-bit) values and store it in the rgb array
 		yP2 = 38142*y16_3 >> 15;
-		*ptr++ = clamp(yP2 + rP2); //this might exceed 255
-		*ptr++ = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
-		*ptr++ = clamp(yP2 + bP2); //this might exceed 255
+		*rgbPtr++ = clamp(yP2 + rP2);
+		*rgbPtr++ = clamp(yP2 + gP2);
+		*rgbPtr++ = clamp(yP2 + bP2);
 
+		//Calculate the r, g, and b (8-bit) values and store it in the rgb array
 		yP2 = 38142*y16_4 >> 15;
-		*ptr++ = clamp(yP2 + rP2); //this might exceed 255
-		*ptr++ = clamp(yP2 + gP2); //this could be less than 0 or greater than 255
-		*ptr++ = clamp(yP2 + bP2); //this might exceed 255
+		*rgbPtr++ = clamp(yP2 + rP2);
+		*rgbPtr++ = clamp(yP2 + gP2);
+		*rgbPtr++ = clamp(yP2 + bP2);
 	}
 }
 
@@ -135,8 +168,8 @@ int main(void)
 	assert(cols % 2 == 0);
 	assert(components == 3);
 
-	uint8_t *rgb = malloc(rows*cols*components*sizeof(unsigned char));
-	uint8_t *ycbcr = malloc(rows*cols*components*sizeof(unsigned char) >> 1);
+	uint8_t *rgb = malloc(rows*cols*components*sizeof(uint8_t));
+	uint8_t *ycbcr = malloc(rows*cols*components*sizeof(uint8_t) >> 1);
 
 	fprintf(stderr, "%lu\n", sizeof(rgb));
 
@@ -153,6 +186,8 @@ int main(void)
 
 	fprintf(stderr, "Converting to YCbCr...\n");
 	toYCbCr(rgb, ycbcr, rows, cols);
+
+	memset(rgb, 0, rows*cols*components);
 
 	fprintf(stderr, "Converting to RGB...\n");
 	toRGB(ycbcr, rgb, rows, cols);
