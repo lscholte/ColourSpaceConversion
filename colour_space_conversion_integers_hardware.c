@@ -15,8 +15,6 @@ void toYCbCr(register uint8_t * restrict rgb, uint8_t * restrict ycbcr, uint16_t
 	uint32_t result;
 	uint32_t *rgbPtr = (uint32_t *) rgb;
 
-	int r1, g1, b1, y1, cb1, cr1;
-
 	uint32_t *ycbcr32Ptr;
 	uint16_t *ycbcr16Ptr;
 
@@ -84,9 +82,6 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 	uint32_t *ycbcrPtr = (uint32_t *) ycbcr;
 	uint8_t *rgbPtr = rgb;
 	uint32_t ycbcr_value, yyy_value;
-
-	int y16_1, cb128, cr128, rP2, gP2, bP2, yP2, r1, g1, b1;
-
 
 	uint32_t *rgb32Ptr;
 	uint16_t *rgb16Ptr;
