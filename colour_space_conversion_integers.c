@@ -25,7 +25,9 @@ void toYCbCr(register uint8_t * restrict rgb, uint8_t * restrict ycbcr, uint16_t
 	uint16_t result16;
 	uint8_t result8;
 
-	for(int i = rows*cols*3 - 1; i > 0; i -= 12)
+	//This is equivalent to i = rows*cols*3 - 1
+	int size = rows*cols;
+	for(int i = (size << 1) + size - 1; i > 0; i -= 12)
 	{
 
 		rgb_value = *rgbPtr;
@@ -41,6 +43,7 @@ void toYCbCr(register uint8_t * restrict rgb, uint8_t * restrict ycbcr, uint16_t
 		cr = 128 + ((28770*r - 24117*g - 4653*b) >> 16);
 		result32 = y | (cb << 8) | (cr << 16);
 
+		//Storing the YCbCr values all at once
 		ycbcr32Ptr = (uint32_t *) ycbcr8Ptr;
 		*ycbcr32Ptr = result32;
 		ycbcr8Ptr += 3;
@@ -66,9 +69,10 @@ void toYCbCr(register uint8_t * restrict rgb, uint8_t * restrict ycbcr, uint16_t
 		g = (rgb_value << 16) >> 24;
 		b = (rgb_value << 8) >> 24;
         
-		//Calculate the Y (8-bit) value and store it in the ycbcr array
+		//Calculate the Y (8-bit) value
 		result16 = result16 | ((16 + ((16483*r + 33030*g + 6423*b) >> 16)) << 8);
 
+		//Storing the next 2 Y values all at once
 		ycbcr16Ptr = (uint16_t *) ycbcr8Ptr;
 		*ycbcr16Ptr = result16;
 		ycbcr8Ptr += 2;
@@ -82,9 +86,10 @@ void toYCbCr(register uint8_t * restrict rgb, uint8_t * restrict ycbcr, uint16_t
 		g = (rgb_value << 16) >> 24;
 		b = (rgb_value << 8) >> 24;
         
-		//Calculate the Y (8-bit) value and store it in the ycbcr array
+		//Calculate the Y (8-bit) value
 		result8 = 16 + ((16483*r + 33030*g + 6423*b) >> 16);
 
+		//Storing the remaining Y value
 		*ycbcr8Ptr++ = result8;
         
 		//Move the rgb pointer up by 3 bytes to grab the next pixel as a 32-bit value
@@ -130,7 +135,9 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 	uint16_t result16;
 	uint8_t result8;
 
-	for(int i = ((rows*cols*3) >> 1) - 1; i > 0; i -= 6)
+	//This is equivalent to i = (rows*cols*3)/2 - 1
+	int size = rows*cols;
+	for(int i = (size + (size >> 1)) - 1; i > 0; i -= 6)
 	{
 		
 		ycbcr_value = *ycbcrPtr;
@@ -152,6 +159,7 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 		result32 = result32 | (clamp(yP2 + gP2) << 8);
 		result32 = result32 | (clamp(yP2 + bP2) << 16);
 
+		//Storing the RGB values all at once
 		rgb32Ptr = (uint32_t *) rgb8Ptr;
 		*rgb32Ptr = result32;
 		rgb8Ptr += 3;
@@ -175,6 +183,7 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 		result32 = result32 | (clamp(yP2 + gP2) << 8);
 		result32 = result32 | (clamp(yP2 + bP2) << 16);
 
+		//Storing the RGB values all at once
 		rgb32Ptr = (uint32_t *) rgb8Ptr;
 		*rgb32Ptr = result32;
 		rgb8Ptr += 3;
@@ -185,6 +194,7 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 		result32 = result32 | (clamp(yP2 + gP2) << 8);
 		result32 = result32 | (clamp(yP2 + bP2) << 16);
 
+		//Storing the RGB values all at once
 		rgb32Ptr = (uint32_t *) rgb8Ptr;
 		*rgb32Ptr = result32;
 		rgb8Ptr += 3;
@@ -194,10 +204,12 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 		result16 = clamp(yP2 + rP2);
 		result16 = result16 | (clamp(yP2 + gP2) << 8);
 
+		//Storing the R and G values all at once
 		rgb16Ptr = (uint16_t *) rgb8Ptr;
 		*rgb16Ptr = result16;
 		rgb8Ptr += 2;
 
+		//Storing the remaining B value
 		result8 = clamp(yP2 + bP2);
 		*rgb8Ptr++ = result8;
 

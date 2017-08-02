@@ -20,7 +20,9 @@ void toYCbCr(register uint8_t * restrict rgb, uint8_t * restrict ycbcr, uint16_t
 
 	uint16_t result16;
 
-	for(int i = rows*cols*3 - 1; i > 0; i -= 12)
+	//This is equivalent to i = rows*cols*3 - 1
+	int size = rows*cols;
+	for(int i = (size << 1) + size - 1; i > 0; i -= 12)
 	{
 		//Converts an RGB value stored in the first 24 bits of a 32-bit value into
 		//a YCbCr value stored in the first 24 bits of a 32-bit value
@@ -88,7 +90,9 @@ void toRGB(uint8_t * restrict ycbcr, uint8_t * restrict rgb, uint16_t rows, uint
 
 	uint16_t result16;
 
-	for(int i = ((rows*cols*3) >> 1) - 1; i > 0; i -= 6)
+	//This is equivalent to i = (rows*cols*3)/2 - 1
+	int size = rows*cols;
+	for(int i = (size + (size >> 1)) - 1; i > 0; i -= 6)
 	{
 		
 		ycbcr_value = *ycbcrPtr;
