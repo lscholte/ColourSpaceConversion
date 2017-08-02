@@ -115,6 +115,7 @@ uint8_t clamp(int n)
     return (uint8_t) n;
 }
 
+
 //ycbcr is a rows*cols*3 array of unsigned char (ie [0, 255])
 //rgb is a rows*cols*3 array of unsigned char (ie [0, 255]). Its contents are modified by this function
 //rows is the number of rows in the image

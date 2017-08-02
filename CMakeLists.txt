@@ -6,7 +6,7 @@ project(ColourSpaceConverter LANGUAGES C)
 option(COMPILE_ARM "Compile the program for running on ARM on lab machines" OFF)
 if(COMPILE_ARM)
     set(CMAKE_C_COMPILER /opt/arm/4.3.2/bin/arm-linux-gcc)
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -static")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -static -march=armv6")
 endif()
 
 #Use C99 and enable all compiler warnings
@@ -14,3 +14,4 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -save-temps -std=c99 -Wall -O3")
 
 add_executable(converter "colour_space_conversion_integers.c")
 add_executable(createImage "write_png.c" "stb_image_write.h")
+add_executable(testStuff "test.c")
