@@ -1,5 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
+#include <string.h>
+#include <assert.h>
 
 //rgb is a rows*cols*3 array of unsigned char (ie [0, 255])
 //ycbcr is a rows*cols*3 array of unsigned char (ie [0, 255]). Its contents are modified by this function
@@ -30,34 +33,34 @@ void toYCbCr(unsigned char *rgb, unsigned char *ycbcr, int rows, int cols)
 		g2 = (float) rgb[i+4];
 		b2 = (float) rgb[i+5];
 		y2  =  16.0 + 0.257*r2 + 0.504*g2 + 0.098*b2; //should be guaranteed to be in range of [0, 255]
-		cb2 = 128.0 - 0.148*r2 - 0.291*g2 + 0.439*b2; //should be guaranteed to be in range of [0, 255]
-		cr2 = 128.0 + 0.439*r2 - 0.368*g2 - 0.071*b2; //should be guaranteed to be in range of [0, 255]
+		//cb2 = 128.0 - 0.148*r2 - 0.291*g2 + 0.439*b2; //should be guaranteed to be in range of [0, 255]
+		//cr2 = 128.0 + 0.439*r2 - 0.368*g2 - 0.071*b2; //should be guaranteed to be in range of [0, 255]
 
 		// Pixel 3
 		r3 = (float) rgb[i+6];
 		g3 = (float) rgb[i+7];
 		b3 = (float) rgb[i+8];
 		y3  =  16.0 + 0.257*r3 + 0.504*g3 + 0.098*b3; //should be guaranteed to be in range of [0, 255]
-		cb3 = 128.0 - 0.148*r3 - 0.291*g3 + 0.439*b3; //should be guaranteed to be in range of [0, 255]
-		cr3 = 128.0 + 0.439*r3 - 0.368*g3 - 0.071*b3; //should be guaranteed to be in range of [0, 255]
+		//cb3 = 128.0 - 0.148*r3 - 0.291*g3 + 0.439*b3; //should be guaranteed to be in range of [0, 255]
+		//cr3 = 128.0 + 0.439*r3 - 0.368*g3 - 0.071*b3; //should be guaranteed to be in range of [0, 255]
 
 		// Pixel 4
 		r4 = (float) rgb[i+9];
 		g4 = (float) rgb[i+10];
 		b4 = (float) rgb[i+11];
 		y4  =  16.0 + 0.257*r4 + 0.504*g4 + 0.098*b4; //should be guaranteed to be in range of [0, 255]
-		cb4 = 128.0 - 0.148*r4 - 0.291*g4 + 0.439*b4; //should be guaranteed to be in range of [0, 255]
-		cr4 = 128.0 + 0.439*r4 - 0.368*g4 - 0.071*b4; //should be guaranteed to be in range of [0, 255]
+		//cb4 = 128.0 - 0.148*r4 - 0.291*g4 + 0.439*b4; //should be guaranteed to be in range of [0, 255]
+		//cr4 = 128.0 + 0.439*r4 - 0.368*g4 - 0.071*b4; //should be guaranteed to be in range of [0, 255]
 		
 		// Perform downsampling
 		
 		// simple (From my testing, this actually seems to result in better images. Strange...)
-//		cbOut = cb1; 
-//		crOut = cr1;
+		cbOut = cb1; 
+		crOut = cr1;
 		
 		// average
-		cbOut = (cb1 + cb2 + cb3 + cb4) / 4;
-		crOut = (cr1 + cr2 + cr3 + cr4) / 4;
+//		cbOut = (cb1 + cb2 + cb3 + cb4) / 4;
+//		crOut = (cr1 + cr2 + cr3 + cr4) / 4;
 
 
 		// Set output values
@@ -77,12 +80,10 @@ float clamp(float f)
 {
     if(f > 255)
     {
-        fprintf(stderr, "float %f out of range\n", f);
         return 255;
     }
     else if(f < 0)
     {
-        fprintf(stderr, "float %f out of range\n", f);
         return 0;
     }
     return f;
@@ -157,10 +158,13 @@ int main(void)
 	int rows, cols, components;
 	scanf("%d %d %d", &rows, &cols, &components);
 
-	unsigned char rgb[rows*cols*components];
-	unsigned char ycbcr[rows*cols*components];
+	assert(rows % 2 == 0);
+	assert(cols % 2 == 0);
+	assert(components == 3);
 
-	fprintf(stderr, "%lu\n", sizeof(rgb));
+	unsigned char *rgb = malloc(rows*cols*components*sizeof(unsigned char));
+	unsigned char *ycbcr = malloc(rows*cols*components*sizeof(unsigned char) >> 1);
+
 
 	unsigned char *ptrR = rgb;
 	unsigned char *ptrG = rgb + 1;
@@ -173,23 +177,39 @@ int main(void)
 		ptrB += 3;
 	}
 
-	fprintf(stderr, "Converting to YCbCr...\n");
-	toYCbCr(rgb, ycbcr, rows, cols);
+	int execution_times = 20;
 
-//	for(int i = 0; i < rows*cols*components/2; ++i)
-//	{
-//		printf("%hhu ", ycbcr[i]);
-//	}
-	
-//	printf("\n\n");
+	fprintf(stderr, "Converting to YCbCr...\n");
+
+	clock_t before, after;
+	double elapsed;
+	before = clock();
+	for(int i = 0; i < execution_times; ++i)
+	{
+		toYCbCr(rgb, ycbcr, rows, cols);
+	}
+	after = clock();
+
+	elapsed = (double) (after - before) / CLOCKS_PER_SEC;
+	fprintf(stderr, "Time taken to run %d executions of toRGB in clock ticks: %f seconds", execution_times, elapsed);	
+
+	memset(rgb, 0, rows*cols*components);
 
 	fprintf(stderr, "Converting to RGB...\n");
-	toRGB(ycbcr, rgb, rows, cols);
 
-	fprintf(stderr, "%lu\n", sizeof(rgb));
+	before = clock();
+	for(int i = 0; i < execution_times; ++i)
+	{
+		toRGB(ycbcr, rgb, rows, cols);
+	}
+	after = clock();
+
+	elapsed = (double) (after - before) / CLOCKS_PER_SEC;
+	fprintf(stderr, "Time taken to run %d executions of toRGB in clock ticks: %f seconds", execution_times, elapsed);	
+
 
 	fprintf(stderr, "Writing output...\n");
-    printf("%d %d %d\n", rows, cols, components);
+	printf("%d %d %d\n", rows, cols, components);
 	for(int i = 0; i < rows*cols*components; ++i)
 	{
 		printf("%hhu ", rgb[i]);

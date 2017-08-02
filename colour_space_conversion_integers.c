@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
+#include <time.h>
 
 uint8_t clamp(int n);
 
@@ -241,13 +242,33 @@ int main(void)
 		ptrB += 3;
 	}
 
-	fprintf(stderr, "Converting to YCbCr...\n");
-	toYCbCr(rgb, ycbcr, rows, cols);
+	int execution_times = 20;
+
+	clock_t before, after;
+	double elapsed;
+	before = clock();
+	for(int i = 0; i < execution_times; ++i)
+	{
+		toYCbCr(rgb, ycbcr, rows, cols);
+	}
+	after = clock();
+
+	elapsed = (double) (after - before) / CLOCKS_PER_SEC;
+	fprintf(stderr, "Time taken to run %d executions of toRGB in clock ticks: %f seconds", execution_times, elapsed);	
 
 	memset(rgb, 0, rows*cols*components);
 
 	fprintf(stderr, "Converting to RGB...\n");
-	toRGB(ycbcr, rgb, rows, cols);
+
+	before = clock();
+	for(int i = 0; i < execution_times; ++i)
+	{
+		toRGB(ycbcr, rgb, rows, cols);
+	}
+	after = clock();
+
+	elapsed = (double) (after - before) / CLOCKS_PER_SEC;
+	fprintf(stderr, "Time taken to run %d executions of toRGB in clock ticks: %f seconds", execution_times, elapsed);
 
 	fprintf(stderr, "Writing output...\n");
 	printf("%d %d %d\n", rows, cols, components);
